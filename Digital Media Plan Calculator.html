@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Media Plan Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #03112c; --accent: #00ce48; --warning: #f5a623; --negative: #ff4444;
+  --text: #ffffff; --text-secondary: #8892a0; --border: #1a2a4a;
+  --card-bg: #071830; --input-bg: #0a1f3a;
+}
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5; min-height: 100vh; }
+.container { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+
+/* TOAST */
+#toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--accent); color: #03112c; padding: 12px 24px; border-radius: 6px; font-weight: 700; font-size: 14px; transition: transform .3s ease, opacity .3s ease; opacity: 0; z-index: 9999; pointer-events: none; }
+#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ── HEADER ── */
+header { border-bottom: 1px solid var(--border); padding: 28px 0 20px; }
+.header-inner { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.header-left h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; }
+.header-left p { color: var(--text-secondary); margin-top: 6px; font-size: 15px; }
+
+/* Plan name input */
+.plan-name-wrap { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.plan-name-wrap label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); white-space: nowrap; }
+#planNameInput { background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; width: 280px; padding: 3px 0; }
+#planNameInput:focus { outline: none; border-bottom-color: var(--accent); }
+#planNameInput::placeholder { color: var(--border); }
+
+.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 14px; }
+.header-controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: flex-end; }
+select.dur-select { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px 32px 8px 12px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238892a0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
+select.dur-select:focus { outline: none; border-color: var(--accent); }
+.budget-wrap { display: flex; align-items: center; gap: 12px; }
+.budget-wrap label { color: var(--text-secondary); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.budget-input-wrap { position: relative; }
+.budget-input-wrap .rs-pre { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--accent); font-weight: 700; font-size: 16px; pointer-events: none; }
+#totalBudgetInput { background: transparent; border: none; border-bottom: 2px solid var(--accent); color: var(--text); font-family: 'Inter', sans-serif; font-size: 22px; font-weight: 700; width: 185px; padding: 4px 4px 4px 34px; font-variant-numeric: tabular-nums; }
+#totalBudgetInput:focus { outline: none; }
+.campaign-budget-display { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+.campaign-budget-display strong { color: var(--accent); }
+.reset-btn { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); padding: 7px 14px; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .2s; text-transform: uppercase; letter-spacing: .05em; }
+.reset-btn:hover { border-color: var(--text-secondary); color: var(--text); }
+#budgetWarning { display: none; background: rgba(245,166,35,.12); border: 1px solid var(--warning); border-radius: 6px; padding: 10px 16px; margin: 12px 0 0; color: var(--warning); font-size: 13px; font-weight: 600; }
+
+/* ── BIZ TABS ── */
+.biz-tabs-row { display: flex; align-items: stretch; margin-top: 24px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.biz-tab { flex: 1; padding: 14px 20px; cursor: pointer; color: var(--text-secondary); background: var(--card-bg); border-right: 1px solid var(--border); transition: all .2s; user-select: none; text-align: center; }
+.biz-tab:last-child { border-right: none; }
+.biz-tab:hover:not(.biz-active) { background: rgba(255,255,255,.03); color: var(--text); }
+.biz-tab-name { font-size: 17px; font-weight: 700; }
+.biz-tab-sub { font-size: 11px; color: var(--text-secondary); margin-top: 3px; }
+.biz-tab.biz-active.b2b-active { background: #0b2340; border-bottom: 3px solid #4fc3f7; }
+.biz-tab.biz-active.b2b-active .biz-tab-name { color: #4fc3f7; }
+.biz-tab.biz-active.b2c-active { background: #0a1f12; border-bottom: 3px solid var(--accent); }
+.biz-tab.biz-active.b2c-active .biz-tab-name { color: var(--accent); }
+.biz-tab.biz-active.d2c-active { background: #1e0f2a; border-bottom: 3px solid #ce93d8; }
+.biz-tab.biz-active.d2c-active .biz-tab-name { color: #ce93d8; }
+.biz-pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 50px; margin-top: 5px; }
+.pill-b2b { background: rgba(79,195,247,.15); color: #4fc3f7; }
+.pill-b2c { background: rgba(0,206,72,.15); color: var(--accent); }
+.pill-d2c { background: rgba(206,147,216,.15); color: #ce93d8; }
+
+/* ── SUB-TABS ── */
+.sub-tabs-row { display: flex; align-items: center; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.sub-tab { padding: 7px 20px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-secondary); background: transparent; border: 1px solid var(--border); border-radius: 50px; transition: all .2s; user-select: none; white-space: nowrap; }
+.sub-tab:hover:not(.sub-active) { border-color: var(--text-secondary); color: var(--text); }
+.sub-tab.sub-active { color: #03112c; border-color: transparent; font-weight: 700; }
+.sub-tab.sub-active.sub-b2b { background: #4fc3f7; }
+.sub-tab.sub-active.sub-b2c { background: var(--accent); }
+.sub-tab.sub-active.sub-d2c { background: #ce93d8; }
+.tab-desc-bar { font-size: 12px; color: var(--text-secondary); margin-top: 8px; font-style: italic; }
+
+/* ── SECTION LABEL ── */
+.section-label { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 12px; margin-top: 28px; }
+
+/* ── TABLE ── */
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; margin-top: 12px; }
+table { width: 100%; border-collapse: collapse; min-width: 960px; font-variant-numeric: tabular-nums; }
+thead th { background: var(--card-bg); color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; padding: 12px 10px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+thead th:first-child { text-align: left; padding-left: 16px; }
+thead th .th-inner { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+thead th:first-child .th-inner { justify-content: flex-start; }
+.col-group-input { background: #061526 !important; }
+.col-group-output { background: #071e12 !important; }
+.info-icon { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; background: var(--border); color: var(--text-secondary); font-size: 9px; font-weight: 700; cursor: help; flex-shrink: 0; }
+.tooltip-wrap { position: relative; display: inline-flex; }
+.tooltip-wrap .tooltip-box { display: none; position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #0d2040; border: 1px solid var(--border); color: var(--text); font-size: 12px; padding: 10px 14px; border-radius: 6px; z-index: 300; text-transform: none; letter-spacing: 0; font-weight: 400; pointer-events: none; min-width: 200px; max-width: 280px; white-space: normal; line-height: 1.5; }
+.tooltip-wrap:hover .tooltip-box { display: block; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+tbody tr:hover { background: rgba(255,255,255,.025); }
+tbody tr:last-child { border-bottom: none; }
+td { padding: 10px 10px; text-align: right; font-size: 13px; color: var(--text); vertical-align: middle; }
+td:first-child { text-align: left; padding-left: 16px; }
+.ch-name { display: flex; align-items: center; gap: 8px; }
+.ch-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ch-label { font-weight: 600; font-size: 13px; white-space: nowrap; }
+td.input-cell input { background: transparent; border: none; border-bottom: 1px solid transparent; color: var(--text); font-family: 'Inter', sans-serif; font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; width: 86px; padding: 2px 0; transition: border-color .15s; }
+td.input-cell input:focus { outline: none; border-bottom-color: var(--accent); }
+td.input-cell input:hover { border-bottom-color: var(--border); }
+td.input-cell { background: rgba(255,255,255,.01); }
+td.oc { color: var(--text-secondary); background: rgba(0,206,72,.02); }
+td.oc:hover { color: var(--text); }
+tr.total-row { border-top: 2px solid var(--accent) !important; background: rgba(0,206,72,.04); }
+tr.total-row td { font-weight: 700; font-size: 13px; }
+tr.total-row td.oc { color: var(--accent); }
+.table-interpretation { margin-top: 12px; color: var(--text-secondary); font-style: italic; font-size: 13px; line-height: 1.7; }
+
+/* ── BUDGET ADVISOR ── */
+#advisorPanel { display: none; margin-top: 16px; border: 1px solid var(--warning); border-left: 4px solid var(--warning); border-radius: 8px; background: rgba(245,166,35,.06); overflow: hidden; }
+.advisor-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; cursor: pointer; border-bottom: 1px solid rgba(245,166,35,.2); }
+.advisor-title { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; color: var(--warning); }
+.advisor-title svg { width: 18px; height: 18px; flex-shrink: 0; }
+.advisor-toggle { font-size: 18px; color: var(--warning); }
+.advisor-body { padding: 16px 20px 20px; }
+.advisor-context { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6; }
+.advisor-context strong { color: var(--text); }
+.advisor-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 12px; }
+.advisor-card { border: 1px solid var(--border); border-radius: 8px; background: var(--card-bg); padding: 16px; transition: border-color .2s; }
+.advisor-card:hover { border-color: rgba(245,166,35,.5); }
+.advisor-card.best-pick { border-color: var(--accent); background: rgba(0,206,72,.05); }
+.advisor-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.advisor-ch-name { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; }
+.advisor-ch-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink:0; }
+.advisor-badge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 50px; }
+.badge-best { background: rgba(0,206,72,.15); color: var(--accent); }
+.badge-good { background: rgba(79,195,247,.12); color: #4fc3f7; }
+.badge-neutral { background: rgba(255,255,255,.07); color: var(--text-secondary); }
+.advisor-metrics { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.advisor-metric-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+.advisor-metric-row .aml { color: var(--text-secondary); }
+.advisor-metric-row .amv { font-weight: 600; font-variant-numeric: tabular-nums; }
+.advisor-metric-row .amv.positive { color: var(--accent); }
+.advisor-impact { background: rgba(255,255,255,.04); border-radius: 5px; padding: 8px 10px; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
+.advisor-impact strong { color: var(--text); }
+.apply-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 6px 14px; border-radius: 5px; background: transparent; border: 1px solid var(--border); color: var(--text-secondary); font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .2s; }
+.apply-btn:hover { border-color: var(--accent); color: var(--accent); }
+.advisor-card.best-pick .apply-btn { border-color: var(--accent); color: var(--accent); }
+.advisor-note { margin-top: 14px; font-size: 12px; color: var(--text-secondary); font-style: italic; }
+
+/* ── KPI BAR ── */
+.metrics-bar { display: flex; border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--card-bg); overflow: hidden; margin: 24px 0; }
+.metric-item { flex: 1; padding: 20px 24px; border-right: 1px solid var(--border); }
+.metric-item:last-child { border-right: none; }
+.metric-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-secondary); margin-bottom: 8px; }
+.metric-value { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.metric-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+/* ── CHART CARDS ── */
+.card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 24px; }
+.card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--text-secondary); margin-bottom: 20px; }
+.card-interpretation { margin-top: 16px; font-size: 12px; color: var(--text-secondary); font-style: italic; line-height: 1.5; border-top: 1px solid var(--border); padding-top: 12px; }
+.charts-row1 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 16px; }
+.charts-row2 { display: grid; grid-template-columns: 65fr 35fr; gap: 16px; margin-top: 16px; }
+.donut-wrap { position: relative; height: 200px; display: flex; align-items: center; justify-content: center; }
+.donut-center { position: absolute; text-align: center; pointer-events: none; }
+.donut-center .dc-val { font-size: 20px; font-weight: 700; line-height: 1; }
+.donut-center .dc-label { font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-secondary); margin-top: 4px; }
+.donut-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.radar-wrap { height: 220px; }
+.scatter-wrap { height: 260px; }
+.eff-ranking { display: flex; flex-direction: column; gap: 10px; }
+.eff-row { display: flex; align-items: center; gap: 10px; }
+.eff-rank-num { font-size: 11px; font-weight: 700; color: var(--text-secondary); width: 16px; text-align: right; flex-shrink: 0; }
+.eff-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.eff-name { font-size: 12px; font-weight: 600; width: 110px; flex-shrink: 0; }
+.eff-bar-wrap { flex: 1; height: 20px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.eff-bar { height: 100%; border-radius: 3px; transition: width .4s ease; }
+.eff-cpr { font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 600; width: 80px; text-align: right; flex-shrink: 0; }
+
+/* ══════════════════════════════════════════════
+   SCENARIO COMPARISON — Complete Redesign
+   ══════════════════════════════════════════════ */
+.scenario-section { margin-top: 32px; }
+
+/* Explainer box — shown always */
+.scenario-explainer {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px 24px; margin-bottom: 20px;
+}
+.scenario-explainer-head {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.scenario-explainer-head svg { width: 20px; height: 20px; color: var(--accent); flex-shrink:0; }
+.scenario-explainer-head h3 { font-size: 15px; font-weight: 700; color: var(--text); }
+.scenario-explainer p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+.scenario-explainer p + p { margin-top: 6px; }
+
+/* How-to steps */
+.scenario-steps { display: flex; gap: 0; margin-top: 16px; }
+.scenario-step { flex: 1; display: flex; align-items: flex-start; gap: 12px; padding: 0 16px; border-right: 1px solid var(--border); }
+.scenario-step:first-child { padding-left: 0; }
+.scenario-step:last-child { border-right: none; }
+.step-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+.step-num.sn-a { background: rgba(0,206,72,.2); color: var(--accent); }
+.step-num.sn-b { background: rgba(245,166,35,.2); color: var(--warning); }
+.step-num.sn-c { background: rgba(79,195,247,.15); color: #4fc3f7; }
+.step-text { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+.step-text strong { color: var(--text); display: block; margin-bottom: 2px; }
+
+/* Name + Save row */
+.scenario-save-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.scen-name-group { display: flex; align-items: center; gap: 8px; }
+.scen-name-group label { font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.scen-name-input { background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; padding: 8px 12px; width: 200px; }
+.scen-name-input:focus { outline: none; border-color: var(--accent); }
+.scen-name-input::placeholder { color: var(--border); }
+.btn-a { background: var(--accent); color: #03112c; border: none; padding: 9px 20px; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .2s; white-space: nowrap; }
+.btn-a:hover { opacity: .85; }
+.btn-b { background: var(--warning); color: #03112c; border: none; padding: 9px 20px; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .2s; white-space: nowrap; }
+.btn-b:hover { opacity: .85; }
+.btn-clr { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); padding: 9px 20px; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; }
+.btn-clr:hover { border-color: var(--negative); color: var(--negative); }
+.scenario-saved-pills { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+.saved-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 700; }
+.saved-pill.pill-a { background: rgba(0,206,72,.15); color: var(--accent); border: 1px solid rgba(0,206,72,.3); }
+.saved-pill.pill-b { background: rgba(245,166,35,.15); color: var(--warning); border: 1px solid rgba(245,166,35,.3); }
+.saved-pill-sub { font-weight: 400; font-size: 11px; opacity: .8; }
+
+/* Comparison result */
+#scenarioCompare { display: none; margin-top: 20px; }
+
+/* Summary banner */
+.scen-summary-banner {
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 16px 24px; margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+}
+.scen-summary-text { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+.scen-summary-text strong { color: var(--text); }
+.scen-winner-badge { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; }
+.scen-winner-a { background: rgba(0,206,72,.12); color: var(--accent); border: 1px solid rgba(0,206,72,.3); }
+.scen-winner-b { background: rgba(245,166,35,.12); color: var(--warning); border: 1px solid rgba(245,166,35,.3); }
+.scen-winner-tie { background: rgba(79,195,247,.1); color: #4fc3f7; border: 1px solid rgba(79,195,247,.25); }
+
+/* What changed section */
+.scen-what-changed {
+  background: rgba(255,255,255,.02); border: 1px solid var(--border);
+  border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+}
+.scen-what-changed-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--text-secondary); margin-bottom: 12px; }
+.change-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 10px; }
+.change-item { display: flex; flex-direction: column; gap: 3px; }
+.change-label { font-size: 11px; color: var(--text-secondary); }
+.change-vals { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+.change-a { color: var(--accent); }
+.change-b { color: var(--warning); }
+.change-arrow { color: var(--text-secondary); font-size: 10px; }
+.change-delta { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
+.delta-up { background: rgba(0,206,72,.12); color: var(--accent); }
+.delta-down { background: rgba(255,68,68,.12); color: var(--negative); }
+.delta-same { background: rgba(255,255,255,.06); color: var(--text-secondary); }
+
+/* Two-column scenario cards */
+.sc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.sc-card { border: 1px solid var(--border); border-radius: 8px; background: var(--card-bg); padding: 0; overflow: hidden; }
+.sc-card-header {
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+}
+.sc-card-title { font-size: 15px; font-weight: 700; }
+.sc-card-meta { font-size: 11px; color: var(--text-secondary); margin-top: 3px; display: flex; flex-direction: column; gap: 2px; }
+.sc-card-meta span { display: flex; align-items: center; gap: 4px; }
+.sc-card.sc-a .sc-card-header { border-top: 3px solid var(--accent); }
+.sc-card.sc-b .sc-card-header { border-top: 3px solid var(--warning); }
+.sc-card.sc-a .sc-card-title { color: var(--accent); }
+.sc-card.sc-b .sc-card-title { color: var(--warning); }
+.sc-metrics-section { padding: 16px 20px; }
+.sc-metrics-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--text-secondary); margin-bottom: 10px; }
+.sc-metrics { display: flex; flex-direction: column; gap: 8px; }
+.sc-metric { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+.sc-metric:last-child { border-bottom: none; }
+.sc-metric .sml { color: var(--text-secondary); }
+.sc-metric .smv { font-weight: 700; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 6px; }
+.diff-badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 50px; }
+.diff-better { background: rgba(0,206,72,.15); color: var(--accent); }
+.diff-worse { background: rgba(255,68,68,.15); color: var(--negative); }
+.diff-same { background: rgba(255,255,255,.06); color: var(--text-secondary); }
+
+/* Channel allocation diff table inside scenario card */
+.sc-channel-diff { padding: 0 20px 16px; }
+.sc-channel-diff-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--text-secondary); margin-bottom: 8px; }
+.sc-ch-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,.03); }
+.sc-ch-row:last-child { border-bottom: none; }
+.sc-ch-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink:0; }
+.sc-ch-name { font-size: 12px; min-width: 100px; flex: 1; }
+.sc-ch-pct { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; width: 40px; text-align: right; }
+.sc-ch-bar-wrap { width: 80px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.sc-ch-bar { height: 100%; border-radius: 3px; }
+
+/* EXPORT */
+.export-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn-export { display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid var(--border); color: var(--text); padding: 10px 20px; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; }
+.btn-export:hover { border-color: var(--accent); color: var(--accent); }
+.btn-export svg { width: 16px; height: 16px; }
+
+/* ══ CHANNEL MANAGER ══ */
+.ch-mgr-bar { display:flex; align-items:center; justify-content:space-between; margin-top:10px; flex-wrap:wrap; gap:8px; }
+.btn-ch-mgr { display:inline-flex; align-items:center; gap:7px; background:transparent; border:1px solid var(--border); color:var(--text-secondary); padding:7px 14px; border-radius:6px; font-family:'Inter',sans-serif; font-size:12px; font-weight:600; cursor:pointer; transition:all .2s; }
+.btn-ch-mgr:hover { border-color:var(--accent); color:var(--accent); }
+.btn-ch-mgr svg { width:14px; height:14px; }
+.ch-count-badge { font-size:11px; color:var(--text-secondary); font-style:italic; }
+
+/* Modal overlay */
+#chModal { display:none; position:fixed; inset:0; background:rgba(2,8,20,.85); z-index:1000; align-items:center; justify-content:center; padding:16px; }
+#chModal.open { display:flex; }
+.ch-modal-box { background:#071e36; border:1px solid var(--border); border-radius:12px; width:100%; max-width:760px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; }
+.ch-modal-header { display:flex; align-items:center; justify-content:space-between; padding:20px 24px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.ch-modal-header h2 { font-size:17px; font-weight:700; }
+.ch-modal-header p { font-size:12px; color:var(--text-secondary); margin-top:3px; }
+.ch-modal-close { background:transparent; border:1px solid var(--border); color:var(--text-secondary); width:32px; height:32px; border-radius:6px; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .2s; }
+.ch-modal-close:hover { border-color:var(--negative); color:var(--negative); }
+.ch-modal-body { overflow-y:auto; padding:0; flex:1; display:flex; flex-direction:column; }
+
+/* Active channels list */
+.ch-active-section { padding:20px 24px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.ch-active-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--text-secondary); margin-bottom:12px; }
+.ch-active-list { display:flex; flex-direction:column; gap:8px; }
+.ch-active-row { display:flex; align-items:center; gap:10px; background:var(--card-bg); border:1px solid var(--border); border-radius:7px; padding:10px 14px; transition:border-color .15s; }
+.ch-active-row:hover { border-color:rgba(255,255,255,.1); }
+.ch-active-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; cursor:pointer; border:2px solid transparent; transition:transform .2s; }
+.ch-active-dot:hover { transform:scale(1.3); }
+.ch-active-name { flex:1; font-size:13px; font-weight:600; }
+.ch-active-name input { background:transparent; border:none; border-bottom:1px solid transparent; color:var(--text); font-family:'Inter',sans-serif; font-size:13px; font-weight:600; width:100%; padding:1px 0; transition:border-color .15s; }
+.ch-active-name input:focus { outline:none; border-bottom-color:var(--accent); }
+.ch-active-name input:hover { border-bottom-color:var(--border); }
+.ch-color-pick { width:26px; height:26px; border-radius:5px; border:1px solid var(--border); cursor:pointer; overflow:hidden; flex-shrink:0; }
+.ch-color-pick input[type=color] { width:100%; height:100%; border:none; padding:0; cursor:pointer; background:none; }
+.ch-del-btn { background:transparent; border:1px solid transparent; color:var(--text-secondary); width:28px; height:28px; border-radius:5px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .2s; }
+.ch-del-btn:hover { border-color:var(--negative); color:var(--negative); background:rgba(255,68,68,.08); }
+.ch-active-row.dragging { opacity:.4; }
+.drag-handle { cursor:grab; color:var(--border); font-size:16px; flex-shrink:0; padding:0 2px; user-select:none; }
+.drag-handle:hover { color:var(--text-secondary); }
+
+/* Channel library */
+.ch-library-section { padding:20px 24px; flex:1; }
+.ch-library-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--text-secondary); margin-bottom:12px; }
+.ch-search-bar { display:flex; gap:8px; margin-bottom:14px; }
+.ch-search-bar input { flex:1; background:var(--input-bg); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:'Inter',sans-serif; font-size:13px; padding:8px 12px; }
+.ch-search-bar input:focus { outline:none; border-color:var(--accent); }
+.ch-library-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px; }
+.ch-lib-item { display:flex; align-items:center; gap:9px; background:var(--card-bg); border:1px solid var(--border); border-radius:7px; padding:9px 12px; cursor:pointer; transition:all .2s; }
+.ch-lib-item:hover { border-color:var(--accent); background:rgba(0,206,72,.06); }
+.ch-lib-item.already-added { opacity:.4; cursor:not-allowed; border-style:dashed; }
+.ch-lib-item.already-added:hover { border-color:var(--border); background:var(--card-bg); }
+.ch-lib-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.ch-lib-info { flex:1; min-width:0; }
+.ch-lib-name { font-size:12px; font-weight:700; }
+.ch-lib-meta { font-size:10px; color:var(--text-secondary); margin-top:1px; }
+.ch-lib-add { font-size:16px; color:var(--text-secondary); flex-shrink:0; }
+.ch-lib-item:not(.already-added):hover .ch-lib-add { color:var(--accent); }
+
+/* Custom channel form */
+.ch-custom-section { padding:0 24px 20px; border-top:1px solid var(--border); }
+.ch-custom-toggle { display:flex; align-items:center; gap:8px; padding:14px 0; cursor:pointer; color:var(--text-secondary); font-size:13px; font-weight:600; user-select:none; }
+.ch-custom-toggle:hover { color:var(--text); }
+.ch-custom-toggle svg { width:14px; height:14px; }
+.ch-custom-form { display:none; background:rgba(255,255,255,.03); border-radius:8px; padding:16px; }
+.ch-custom-form.open { display:block; }
+.ch-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.ch-form-field { display:flex; flex-direction:column; gap:5px; }
+.ch-form-field label { font-size:11px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.06em; }
+.ch-form-field input { background:var(--input-bg); border:1px solid var(--border); border-radius:5px; color:var(--text); font-family:'Inter',sans-serif; font-size:13px; padding:7px 10px; width:100%; }
+.ch-form-field input:focus { outline:none; border-color:var(--accent); }
+.ch-form-actions { display:flex; gap:8px; margin-top:12px; }
+.btn-add-custom { background:var(--accent); color:#03112c; border:none; padding:8px 18px; border-radius:6px; font-family:'Inter',sans-serif; font-size:13px; font-weight:700; cursor:pointer; transition:opacity .2s; }
+.btn-add-custom:hover { opacity:.85; }
+
+/* Modal footer */
+.ch-modal-footer { padding:16px 24px; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; gap:12px; flex-wrap:wrap; background:var(--card-bg); }
+.ch-modal-footer-note { font-size:12px; color:var(--text-secondary); font-style:italic; }
+.btn-modal-done { background:var(--accent); color:#03112c; border:none; padding:9px 24px; border-radius:6px; font-family:'Inter',sans-serif; font-size:13px; font-weight:700; cursor:pointer; }
+.btn-modal-done:hover { opacity:.85; }
+
+/* FOOTER */
+footer { border-top: 1px solid var(--border); margin-top: 48px; padding: 22px 0; text-align: center; }
+footer p { font-size: 12px; color: var(--text-secondary); }
+
+/* PRINT */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .biz-tabs-row, .sub-tabs-row, .header-right, .export-section, .scenario-section, footer, .reset-btn, #advisorPanel { display: none !important; }
+  .card { background: #fff !important; border: 1px solid #ccc !important; }
+  .metrics-bar { background: #f5f5f5 !important; border-left-color: #333 !important; }
+  table th, table td, .metric-value, .ch-label { color: #000 !important; }
+  .metric-label, .card-interpretation, .table-interpretation { color: #444 !important; }
+  .print-footer { display: block !important; text-align: center; margin-top: 32px; font-size: 12px; color: #666; border-top: 1px solid #ccc; padding-top: 12px; }
+  @page { margin: 20mm; }
+}
+.print-footer { display: none; }
+
+/* MOBILE */
+@media (max-width: 768px) {
+  .header-inner { flex-direction: column; }
+  .header-right { align-items: flex-start; }
+  .header-left h1 { font-size: 24px; }
+  .header-controls { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .charts-row1, .charts-row2 { grid-template-columns: 1fr; }
+  .sc-grid { grid-template-columns: 1fr; }
+  .metrics-bar { flex-direction: column; }
+  .metric-item { border-right: none; border-bottom: 1px solid var(--border); }
+  .metric-item:last-child { border-bottom: none; }
+  #totalBudgetInput { width: 140px; font-size: 18px; }
+  .biz-tabs-row { flex-wrap: wrap; }
+  .biz-tab { min-width: calc(33% - 2px); }
+  .advisor-cards { grid-template-columns: 1fr; }
+  .scenario-steps { flex-direction: column; gap: 12px; }
+  .scenario-step { border-right: none; border-bottom: 1px solid var(--border); padding: 0 0 12px; }
+  .scenario-step:last-child { border-bottom: none; }
+  #planNameInput { width: 200px; }
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div class="print-footer" id="printFooter"></div>
+<div class="container">
+
+<!-- ═══ HEADER ═══ -->
+<header>
+  <div class="header-inner">
+    <div class="header-left">
+      <h1>Digital Media Plan Calculator</h1>
+      <p>Build, simulate, and compare media plans — powered by India market benchmarks.</p>
+      <div class="plan-name-wrap">
+        <label>Plan Name</label>
+        <input type="text" id="planNameInput" placeholder="e.g. Q3 2025 — B2B Lead Gen Campaign" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-controls">
+        <select class="dur-select" id="durationSelect">
+          <option value="1">1 Month</option>
+          <option value="3">3 Months</option>
+          <option value="6">6 Months</option>
+          <option value="12">12 Months</option>
+        </select>
+        <button class="reset-btn" onclick="resetToDefaults()">↺ Reset Defaults</button>
+      </div>
+      <div class="budget-wrap">
+        <label>Monthly Budget</label>
+        <div class="budget-input-wrap">
+          <span class="rs-pre">Rs</span>
+          <input type="text" id="totalBudgetInput" value="10,00,000" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+      <div class="campaign-budget-display">
+        Total Campaign Budget: <strong id="campaignBudgetVal">Rs 10L</strong>
+        <span id="durationLabel">(1 month)</span>
+      </div>
+    </div>
+  </div>
+  <div id="budgetWarning">⚠ Budget allocations total <span id="budgetWarnPct">0%</span> — must equal 100%.</div>
+</header>
+
+<!-- ═══ BIZ TABS ═══ -->
+<div class="biz-tabs-row" id="bizTabsRow">
+  <div class="biz-tab biz-active b2b-active" data-biz="b2b">
+    <div class="biz-tab-name">B2B</div>
+    <div class="biz-tab-sub">Business to Business</div>
+    <div class="biz-pill pill-b2b">Lead Generation</div>
+  </div>
+  <div class="biz-tab" data-biz="b2c">
+    <div class="biz-tab-name">B2C</div>
+    <div class="biz-tab-sub">Business to Consumer</div>
+    <div class="biz-pill pill-b2c">Consumer Marketing</div>
+  </div>
+  <div class="biz-tab" data-biz="d2c">
+    <div class="biz-tab-name">D2C</div>
+    <div class="biz-tab-sub">Direct to Consumer</div>
+    <div class="biz-pill pill-d2c">E-Commerce</div>
+  </div>
+</div>
+<div class="sub-tabs-row" id="subTabsRow"></div>
+<div class="tab-desc-bar" id="tabDescBar"></div>
+
+<!-- ═══ TABLE ═══ -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-top:28px;flex-wrap:wrap;gap:8px;">
+  <div class="section-label" style="margin-top:0;margin-bottom:0;">Channel Allocation &amp; Performance</div>
+  <div class="ch-mgr-bar" style="margin-top:0;">
+    <button class="btn-ch-mgr" onclick="openChModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Manage Channels
+    </button>
+    <span class="ch-count-badge" id="chCountBadge"></span>
+  </div>
+</div>
+<div class="table-wrap" style="margin-top:12px;">
+  <table id="mediaTable">
+    <thead id="thead"></thead>
+    <tbody id="tbody"></tbody>
+    <tfoot id="tfoot"></tfoot>
+  </table>
+</div>
+<div class="table-interpretation" id="tableInterp">💡 Adjust budget allocations to see insights.</div>
+
+<!-- ═══ CHANNEL MANAGER MODAL ═══ -->
+<div id="chModal" role="dialog" aria-modal="true">
+  <div class="ch-modal-box">
+    <div class="ch-modal-header">
+      <div>
+        <h2>⚙ Manage Channels</h2>
+        <p id="chModalSubtitle">Add, remove, rename, or reorder channels for this plan. Changes apply instantly.</p>
+      </div>
+      <button class="ch-modal-close" onclick="closeChModal()" title="Close">✕</button>
+    </div>
+    <div class="ch-modal-body">
+
+      <!-- Active channels -->
+      <div class="ch-active-section">
+        <div class="ch-active-title">Active Channels in this Plan <span id="chActiveCount" style="color:var(--accent)"></span></div>
+        <div class="ch-active-list" id="chActiveList"></div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text-secondary)">💡 Tip: Click a channel name to rename it. Click the colour dot to change colour. Drag <span style="color:var(--text)">⠿</span> to reorder. Budget % will be auto-normalised to 100% when you close.</div>
+      </div>
+
+      <!-- Channel library -->
+      <div class="ch-library-section">
+        <div class="ch-library-title">Channel Library — click any channel to add it</div>
+        <div class="ch-search-bar">
+          <input type="text" id="chLibSearch" placeholder="Search channels… e.g. Reddit, Quora, TikTok" oninput="renderChLibrary()" autocomplete="off">
+        </div>
+        <div class="ch-library-grid" id="chLibraryGrid"></div>
+      </div>
+
+      <!-- Custom channel -->
+      <div class="ch-custom-section">
+        <div class="ch-custom-toggle" onclick="toggleCustomForm()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+          Add a completely custom channel not in the library
+          <span id="customFormArrow" style="margin-left:auto">▼</span>
+        </div>
+        <div class="ch-custom-form" id="chCustomForm">
+          <div class="ch-form-grid">
+            <div class="ch-form-field" style="grid-column:1/-1">
+              <label>Channel Name</label>
+              <input type="text" id="ccName" placeholder="e.g. Reddit Ads" autocomplete="off">
+            </div>
+            <div class="ch-form-field"><label>CPM (Rs)</label><input type="number" id="ccCpm" placeholder="e.g. 250" min="0.1" step="any"></div>
+            <div class="ch-form-field"><label>CTR (%)</label><input type="number" id="ccCtr" placeholder="e.g. 0.8" min="0" step="any"></div>
+            <div class="ch-form-field"><label>CVR (%)</label><input type="number" id="ccCvr" placeholder="e.g. 2.5" min="0" step="any"></div>
+            <div class="ch-form-field"><label>Frequency</label><input type="number" id="ccFreq" placeholder="e.g. 3.0" min="0.1" step="any"></div>
+            <div class="ch-form-field"><label>Budget %</label><input type="number" id="ccPct" placeholder="e.g. 10" min="0" max="100" step="any"></div>
+            <div class="ch-form-field"><label>Colour</label><input type="color" id="ccColor" value="#a78bfa" style="height:38px;width:100%;border-radius:5px;cursor:pointer;border:1px solid var(--border);background:var(--input-bg);padding:3px;"></div>
+          </div>
+          <div class="ch-form-actions">
+            <button class="btn-add-custom" onclick="addCustomChannel()">+ Add Channel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ch-modal-footer">
+      <span class="ch-modal-footer-note" id="chModalFooterNote">Changes are live — the table updates as you add or remove channels.</span>
+      <button class="btn-modal-done" onclick="closeChModal()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BUDGET ADVISOR ═══ -->
+<div id="advisorPanel">
+  <div class="advisor-header" onclick="toggleAdvisor()">
+    <div class="advisor-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Budget Reallocation Advisor
+      <span id="advisorSummaryBadge" style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-left:4px"></span>
+    </div>
+    <div class="advisor-toggle" id="advisorToggleIcon">▲</div>
+  </div>
+  <div class="advisor-body" id="advisorBody">
+    <div class="advisor-context" id="advisorContext"></div>
+    <div class="advisor-cards" id="advisorCards"></div>
+    <div class="advisor-note" id="advisorNote"></div>
+  </div>
+</div>
+
+<!-- ═══ KPI BAR ═══ -->
+<div class="metrics-bar">
+  <div class="metric-item"><div class="metric-label">Total Budget</div><div class="metric-value" id="kpi-budget">—</div><div class="metric-sub" id="kpi-budget-sub">monthly</div></div>
+  <div class="metric-item"><div class="metric-label">Total Impressions</div><div class="metric-value" id="kpi-imp">—</div><div class="metric-sub">across all channels</div></div>
+  <div class="metric-item"><div class="metric-label" id="kpi-res-lbl">Total Leads</div><div class="metric-value" id="kpi-res">—</div><div class="metric-sub">estimated results</div></div>
+  <div class="metric-item"><div class="metric-label" id="kpi-cpr-lbl">Blended CPL</div><div class="metric-value" id="kpi-cpr">—</div><div class="metric-sub">cost per result</div></div>
+  <div class="metric-item" id="kpi-rev-wrap" style="display:none"><div class="metric-label">Total Revenue</div><div class="metric-value" id="kpi-rev">—</div><div class="metric-sub">estimated</div></div>
+  <div class="metric-item" id="kpi-roas-wrap" style="display:none"><div class="metric-label">Blended ROAS</div><div class="metric-value" id="kpi-roas">—</div><div class="metric-sub">return on ad spend</div></div>
+</div>
+
+<!-- ═══ CHARTS ═══ -->
+<div class="section-label">Visual Summary</div>
+<div class="charts-row1">
+  <div class="card"><div class="card-title">Budget Split</div><div class="donut-wrap"><canvas id="cBudget"></canvas><div class="donut-center"><div class="dc-val" id="dc-bval">—</div><div class="dc-label">Total Budget</div></div></div><div class="donut-legend" id="bLegend"></div><div class="card-interpretation" id="bInterp">—</div></div>
+  <div class="card"><div class="card-title" id="resDonutTitle">Results Split</div><div class="donut-wrap"><canvas id="cResults"></canvas><div class="donut-center"><div class="dc-val" id="dc-rval">—</div><div class="dc-label" id="dc-rlbl">Total Leads</div></div></div><div class="donut-legend" id="rLegend"></div><div class="card-interpretation" id="rInterp">—</div></div>
+  <div class="card"><div class="card-title">Channel Performance Radar</div><div class="radar-wrap"><canvas id="cRadar"></canvas></div><div class="card-interpretation" id="radarInterp">—</div></div>
+</div>
+<div class="charts-row2">
+  <div class="card"><div class="card-title">Efficiency Map — Budget Share vs Results Share</div><div class="scatter-wrap"><canvas id="cScatter"></canvas></div><div class="card-interpretation" id="scatterInterp">—</div></div>
+  <div class="card"><div class="card-title">Efficiency Ranking — Cost Per Result</div><div class="eff-ranking" id="effRanking"></div><div class="card-interpretation" id="effInterp">—</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCENARIO COMPARISON — Redesigned
+     ═══════════════════════════════════════════════════════ -->
+<div class="scenario-section">
+  <div class="section-label">Scenario Comparison</div>
+
+  <!-- Explainer box — always visible -->
+  <div class="scenario-explainer">
+    <div class="scenario-explainer-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent)"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      <h3>What is Scenario Comparison?</h3>
+    </div>
+    <p>Scenario Comparison lets you freeze two different versions of your media plan and compare them side-by-side. Use it to evaluate the impact of budget changes, a different channel mix, or an alternative campaign strategy — before committing to anything.</p>
+    <p style="margin-top:8px;color:#4fc3f7;font-size:12px;font-weight:600;">Example uses: Compare a Rs 10L budget vs Rs 20L budget · Compare aggressive LinkedIn spend vs broader Meta mix · Compare 1-month vs 3-month campaign projections.</p>
+    <div class="scenario-steps">
+      <div class="scenario-step">
+        <div class="step-num sn-a">1</div>
+        <div class="step-text"><strong>Set up your first plan</strong>Configure budget, channels, and parameters above. Give this scenario a name, then click "Save as Scenario A".</div>
+      </div>
+      <div class="scenario-step">
+        <div class="step-num sn-b">2</div>
+        <div class="step-text"><strong>Change something meaningful</strong>Try increasing the total budget, shifting budget between channels, or switching the campaign type. Then save as Scenario B.</div>
+      </div>
+      <div class="scenario-step">
+        <div class="step-num sn-c">3</div>
+        <div class="step-text"><strong>See the full comparison</strong>A detailed side-by-side breakdown appears instantly — showing what changed, which scenario delivers more results, and by how much.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save controls -->
+  <div class="scenario-save-row">
+    <div class="scen-name-group">
+      <label>Scenario A name:</label>
+      <input type="text" class="scen-name-input" id="scenNameA" placeholder="e.g. Conservative Budget" autocomplete="off">
+    </div>
+    <button class="btn-a" onclick="saveScenario('A')">📌 Save as Scenario A</button>
+    <div class="scen-name-group" style="margin-left:8px">
+      <label>Scenario B name:</label>
+      <input type="text" class="scen-name-input" id="scenNameB" placeholder="e.g. Aggressive Spend" autocomplete="off">
+    </div>
+    <button class="btn-b" onclick="saveScenario('B')">📌 Save as Scenario B</button>
+    <button class="btn-clr" onclick="clearScenarios()">✕ Clear</button>
+  </div>
+  <div class="scenario-saved-pills" id="scenPills"></div>
+
+  <!-- Comparison output -->
+  <div id="scenarioCompare">
+    <!-- Summary banner -->
+    <div class="scen-summary-banner" id="scenSummaryBanner"></div>
+    <!-- What changed -->
+    <div class="scen-what-changed" id="scenWhatChanged"></div>
+    <!-- Cards -->
+    <div class="sc-grid" id="scGrid"></div>
+  </div>
+</div>
+
+<!-- ═══ EXPORT ═══ -->
+<div class="export-section" style="margin-top:32px">
+  <div class="section-label">Export &amp; Share</div>
+  <div class="export-btns">
+    <button class="btn-export" onclick="downloadPDF()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Download as PDF
+    </button>
+    <button class="btn-export" onclick="sharePlan()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      Copy Share Link
+    </button>
+  </div>
+</div>
+
+<!-- ═══ METHODOLOGY DISCLAIMER ═══ -->
+<div style="margin-top:32px">
+  <div class="section-label">How to Read These Numbers</div>
+  <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+    <!-- Toggle header -->
+    <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.meth-toggle').textContent=this.nextElementSibling.style.display==='none'?'▼ Show':'▲ Hide'" style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--text-secondary)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Methodology, Accuracy &amp; Assumptions
+      </div>
+      <span class="meth-toggle" style="font-size:12px;color:var(--text-secondary);font-weight:600">▼ Show</span>
+    </div>
+    <div style="display:none;padding:24px">
+      <!-- Q1 -->
+      <div style="margin-bottom:24px">
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:8px">Are these output numbers accurate, or just predictions?</div>
+        <div style="font-size:13px;color:var(--text-secondary);line-height:1.7">
+          All output metrics — Impressions, Reach, Clicks, CPC, Leads/Purchases, and CPR — are <strong style="color:var(--warning)">directional projections, not guaranteed outcomes</strong>. They are calculated using India market benchmark averages for 2025–26, sourced from industry data across platforms like Meta, Google, and LinkedIn.<br><br>
+          Think of them as a <strong style="color:var(--text)">planning range</strong>, not a contractual promise. Real campaigns will vary based on actual conditions.
+        </div>
+      </div>
+
+      <!-- Accuracy range -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:24px">
+        <div style="background:rgba(0,206,72,.06);border:1px solid rgba(0,206,72,.2);border-radius:8px;padding:14px 16px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:6px">Impressions &amp; Reach</div>
+          <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px">±10–15%</div>
+          <div style="font-size:12px;color:var(--text-secondary)">High confidence. CPM is a platform rate card — actual delivery is close to model once campaign is live.</div>
+        </div>
+        <div style="background:rgba(245,166,35,.06);border:1px solid rgba(245,166,35,.2);border-radius:8px;padding:14px 16px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--warning);margin-bottom:6px">Clicks &amp; CPC</div>
+          <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px">±20–35%</div>
+          <div style="font-size:12px;color:var(--text-secondary)">Moderate confidence. CTR varies with creative quality, audience targeting, and ad fatigue — benchmark is a starting point.</div>
+        </div>
+        <div style="background:rgba(255,68,68,.06);border:1px solid rgba(255,68,68,.2);border-radius:8px;padding:14px 16px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--negative);margin-bottom:6px">Leads / Purchases &amp; CPR</div>
+          <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px">±30–50%</div>
+          <div style="font-size:12px;color:var(--text-secondary)">Lower confidence. Conversion rate is heavily influenced by landing page quality, offer strength, brand recall, and funnel design — factors outside the ad platform.</div>
+        </div>
+      </div>
+
+      <!-- Assumptions -->
+      <div style="margin-bottom:20px">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Key assumptions in every calculation</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="font-size:12px;color:var(--text-secondary);display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);flex-shrink:0;margin-top:1px">→</span> CPM, CTR, CVR values are based on India market averages across industries. Your actual rates will differ by brand maturity, audience quality, and creative.</div>
+          <div style="font-size:12px;color:var(--text-secondary);display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);flex-shrink:0;margin-top:1px">→</span> The model assumes full budget utilisation — ad platforms do not always spend 100% of allocated budget, especially in niche audiences.</div>
+          <div style="font-size:12px;color:var(--text-secondary);display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);flex-shrink:0;margin-top:1px">→</span> CPR is constant across budget scale when channel mix percentages and benchmarks are unchanged. Scaling budget does not automatically lower CPR.</div>
+          <div style="font-size:12px;color:var(--text-secondary);display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);flex-shrink:0;margin-top:1px">→</span> Frequency and Reach calculations assume uniform audience distribution — real-world retargeting and interest-based audiences may overlap differently.</div>
+          <div style="font-size:12px;color:var(--text-secondary);display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);flex-shrink:0;margin-top:1px">→</span> No seasonality adjustments are applied. CPMs and CTRs are typically higher during festival periods (Oct–Nov) in India.</div>
+          <div style="font-size:12px;color:var(--text-secondary);display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);flex-shrink:0;margin-top:1px">→</span> D2C Revenue figures use AOV (Average Order Value) inputs. Actual revenue depends on return rates, repeat purchases, and cart abandonment.</div>
+        </div>
+      </div>
+
+      <!-- How to use -->
+      <div style="background:rgba(255,255,255,.03);border-radius:6px;padding:14px 16px">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">How to present this to management</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.7">
+          Present the outputs as <strong style="color:var(--text)">planning estimates based on India platform benchmarks</strong>. Use them to compare channel mix options and budget scales — the relative differences between scenarios are far more reliable than the absolute numbers. When a scenario shows 5x more leads, that directional insight holds even if the exact number shifts by ±30% in reality.<br><br>
+          <strong style="color:var(--accent)">Recommended framing for management:</strong> "Based on India market benchmarks, a Rs X budget across this channel mix is projected to generate approximately Y–Z leads at a CPR of Rs A–B. We will track against these benchmarks weekly and optimise allocations accordingly."
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /.container -->
+
+<footer>
+  <div class="container">
+    <p>Default benchmarks are India market averages (2025–26). Adjust inputs based on your actual campaign data.</p>
+  </div>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  CHANNEL DEFINITIONS — India 2025-26 benchmarks
+// ══════════════════════════════════════════════════════
+const BIZ = {
+  b2b: {
+    label:'B2B', accent:'#4fc3f7', resultLabel:'Leads', cprLabel:'CPL', showRevenue:false,
+    subTabs:[
+      { id:'b2b_lead', label:'Lead Generation', desc:'Demand capture & inbound lead acquisition for B2B products and services.',
+        channels:[
+          {id:'linkedin', name:'LinkedIn Ads',        color:'#0077b5', budgetPct:35, cpm:900,  ctr:0.5, cvr:2.5, freq:2.0, aov:0},
+          {id:'gsearch',  name:'Google Search',       color:'#4285f4', budgetPct:25, cpm:450,  ctr:3.2, cvr:4.5, freq:1.5, aov:0},
+          {id:'meta',     name:'Meta Ads',             color:'#00ce48', budgetPct:15, cpm:180,  ctr:0.9, cvr:2.0, freq:2.5, aov:0},
+          {id:'content',  name:'Content / SEO',        color:'#f5a623', budgetPct:15, cpm:80,   ctr:2.0, cvr:3.0, freq:1.2, aov:0},
+          {id:'email',    name:'Email Marketing',      color:'#ce93d8', budgetPct:10, cpm:12,   ctr:2.8, cvr:5.0, freq:1.0, aov:0},
+        ]},
+      { id:'b2b_abm', label:'Account-Based (ABM)', desc:'Hyper-targeted ABM campaigns for enterprise accounts and senior decision-makers.',
+        channels:[
+          {id:'linkedin', name:'LinkedIn Ads',        color:'#0077b5', budgetPct:45, cpm:1100, ctr:0.6, cvr:3.5, freq:3.0, aov:0},
+          {id:'prog',     name:'Programmatic Display', color:'#4fc3f7', budgetPct:20, cpm:120,  ctr:0.3, cvr:1.5, freq:5.0, aov:0},
+          {id:'gsearch',  name:'Google Search',       color:'#4285f4', budgetPct:20, cpm:500,  ctr:3.5, cvr:5.0, freq:1.5, aov:0},
+          {id:'intent',   name:'Intent Data / G2',    color:'#f5a623', budgetPct:15, cpm:600,  ctr:1.2, cvr:4.0, freq:2.0, aov:0},
+        ]},
+      { id:'b2b_saas', label:'SaaS / Tech', desc:'Pipeline generation for SaaS products — trials, demos, and free sign-ups.',
+        channels:[
+          {id:'gsearch',  name:'Google Search',       color:'#4285f4', budgetPct:30, cpm:500,  ctr:4.0, cvr:5.5, freq:1.5, aov:0},
+          {id:'linkedin', name:'LinkedIn Ads',        color:'#0077b5', budgetPct:25, cpm:950,  ctr:0.6, cvr:3.0, freq:2.0, aov:0},
+          {id:'retarget', name:'Retargeting',         color:'#ff4444', budgetPct:20, cpm:90,   ctr:1.8, cvr:6.0, freq:6.0, aov:0},
+          {id:'youtube',  name:'YouTube Ads',         color:'#ff0000', budgetPct:15, cpm:110,  ctr:0.7, cvr:1.5, freq:3.0, aov:0},
+          {id:'email',    name:'Email Marketing',     color:'#f5a623', budgetPct:10, cpm:12,   ctr:3.0, cvr:5.5, freq:1.0, aov:0},
+        ]},
+      { id:'b2b_event', label:'Events & Webinars', desc:'Driving registrations and attendance for B2B conferences, summits, and webinars.',
+        channels:[
+          {id:'linkedin', name:'LinkedIn Ads',        color:'#0077b5', budgetPct:40, cpm:850,  ctr:0.7, cvr:4.0, freq:2.5, aov:0},
+          {id:'email',    name:'Email Marketing',     color:'#f5a623', budgetPct:25, cpm:10,   ctr:4.5, cvr:8.0, freq:1.0, aov:0},
+          {id:'gsearch',  name:'Google Search',       color:'#4285f4', budgetPct:20, cpm:400,  ctr:3.0, cvr:5.0, freq:1.5, aov:0},
+          {id:'meta',     name:'Meta Ads',             color:'#00ce48', budgetPct:15, cpm:160,  ctr:1.0, cvr:2.5, freq:2.0, aov:0},
+        ]},
+    ]
+  },
+  b2c: {
+    label:'B2C', accent:'#00ce48', resultLabel:'Leads', cprLabel:'CPL', showRevenue:false,
+    subTabs:[
+      { id:'b2c_awareness', label:'Brand Awareness', desc:'Mass reach campaigns to build brand recognition and drive top-of-funnel interest.',
+        channels:[
+          {id:'meta',      name:'Meta Ads',             color:'#00ce48', budgetPct:30, cpm:140, ctr:1.0, cvr:2.0, freq:3.5, aov:0},
+          {id:'youtube',   name:'YouTube Ads',          color:'#ff0000', budgetPct:25, cpm:95,  ctr:0.7, cvr:1.2, freq:4.0, aov:0},
+          {id:'instagram', name:'Instagram Reels',      color:'#e1306c', budgetPct:20, cpm:130, ctr:1.4, cvr:2.5, freq:3.0, aov:0},
+          {id:'gdisplay',  name:'Google Display',       color:'#fbbc04', budgetPct:15, cpm:55,  ctr:0.4, cvr:0.8, freq:5.0, aov:0},
+          {id:'ctv',       name:'OTT / CTV Ads',        color:'#4fc3f7', budgetPct:10, cpm:350, ctr:0.3, cvr:0.5, freq:4.0, aov:0},
+        ]},
+      { id:'b2c_leadgen', label:'Lead Generation', desc:'High-volume consumer lead gen — sign-ups, enquiries, and form fills.',
+        channels:[
+          {id:'meta',     name:'Meta Ads',             color:'#00ce48', budgetPct:35, cpm:150, ctr:1.2, cvr:3.0, freq:2.5, aov:0},
+          {id:'gsearch',  name:'Google Search',        color:'#4285f4', budgetPct:25, cpm:400, ctr:3.5, cvr:5.0, freq:1.5, aov:0},
+          {id:'youtube',  name:'YouTube Ads',          color:'#ff0000', budgetPct:15, cpm:100, ctr:0.8, cvr:1.5, freq:3.0, aov:0},
+          {id:'gdisplay', name:'Google Display',       color:'#fbbc04', budgetPct:15, cpm:50,  ctr:0.4, cvr:1.0, freq:4.0, aov:0},
+          {id:'email',    name:'Email Marketing',      color:'#f5a623', budgetPct:10, cpm:10,  ctr:2.5, cvr:4.0, freq:1.0, aov:0},
+        ]},
+      { id:'b2c_app', label:'App Marketing', desc:'User acquisition and installs for consumer mobile applications.',
+        channels:[
+          {id:'meta',       name:'Meta App Ads',         color:'#00ce48', budgetPct:35, cpm:160, ctr:2.0, cvr:4.0, freq:3.0, aov:0},
+          {id:'gac',        name:'Google App Campaigns', color:'#4285f4', budgetPct:30, cpm:200, ctr:2.5, cvr:5.0, freq:2.5, aov:0},
+          {id:'youtube',    name:'YouTube Ads',          color:'#ff0000', budgetPct:20, cpm:100, ctr:0.9, cvr:2.0, freq:3.5, aov:0},
+          {id:'influencer', name:'Influencer / UGC',     color:'#ce93d8', budgetPct:15, cpm:200, ctr:1.5, cvr:3.5, freq:2.0, aov:0},
+        ]},
+      { id:'b2c_realestate', label:'Real Estate', desc:'Property enquiry generation for residential, commercial, and luxury segments.',
+        channels:[
+          {id:'meta',    name:'Meta Ads',             color:'#00ce48', budgetPct:30, cpm:180, ctr:1.0, cvr:2.0, freq:2.5, aov:0},
+          {id:'gsearch', name:'Google Search',        color:'#4285f4', budgetPct:30, cpm:600, ctr:3.0, cvr:3.5, freq:1.5, aov:0},
+          {id:'youtube', name:'YouTube Ads',          color:'#ff0000', budgetPct:20, cpm:120, ctr:0.6, cvr:1.0, freq:4.0, aov:0},
+          {id:'portals', name:'Property Portals',     color:'#f5a623', budgetPct:20, cpm:300, ctr:2.0, cvr:4.0, freq:2.0, aov:0},
+        ]},
+    ]
+  },
+  d2c: {
+    label:'D2C', accent:'#ce93d8', resultLabel:'Purchases', cprLabel:'CPO', showRevenue:true,
+    subTabs:[
+      { id:'d2c_fashion', label:'Fashion & Apparel', desc:'Full-funnel performance campaigns for clothing, footwear, and accessories brands.',
+        channels:[
+          {id:'meta',       name:'Meta / Instagram',    color:'#00ce48', budgetPct:40, cpm:160, ctr:1.8, cvr:2.5, freq:3.0, aov:2200},
+          {id:'gshop',      name:'Google Shopping',     color:'#4285f4', budgetPct:25, cpm:300, ctr:2.5, cvr:3.5, freq:2.0, aov:2200},
+          {id:'youtube',    name:'YouTube Ads',         color:'#ff0000', budgetPct:15, cpm:100, ctr:0.7, cvr:1.2, freq:4.0, aov:2200},
+          {id:'influencer', name:'Influencer / UGC',    color:'#ce93d8', budgetPct:12, cpm:250, ctr:1.5, cvr:2.0, freq:2.5, aov:2200},
+          {id:'email',      name:'Email / WhatsApp',    color:'#f5a623', budgetPct:8,  cpm:8,   ctr:3.5, cvr:5.5, freq:1.0, aov:2200},
+        ]},
+      { id:'d2c_beauty', label:'Beauty & Wellness', desc:'Performance campaigns for skincare, cosmetics, nutraceuticals, and personal care.',
+        channels:[
+          {id:'meta',       name:'Meta / Instagram',    color:'#00ce48', budgetPct:38, cpm:145, ctr:2.0, cvr:3.0, freq:3.0, aov:1800},
+          {id:'gshop',      name:'Google Shopping',     color:'#4285f4', budgetPct:22, cpm:280, ctr:2.8, cvr:4.0, freq:2.0, aov:1800},
+          {id:'influencer', name:'Influencer / UGC',    color:'#ce93d8', budgetPct:20, cpm:220, ctr:2.2, cvr:3.5, freq:2.5, aov:1800},
+          {id:'youtube',    name:'YouTube Ads',         color:'#ff0000', budgetPct:12, cpm:95,  ctr:0.9, cvr:1.8, freq:4.0, aov:1800},
+          {id:'email',      name:'Email / WhatsApp',    color:'#f5a623', budgetPct:8,  cpm:8,   ctr:4.0, cvr:6.0, freq:1.0, aov:1800},
+        ]},
+      { id:'d2c_food', label:'Food & Beverage', desc:'Rapid repeat-purchase growth for packaged foods, beverages, and health products.',
+        channels:[
+          {id:'meta',   name:'Meta Ads',             color:'#00ce48', budgetPct:35, cpm:135, ctr:1.6, cvr:2.8, freq:3.5, aov:800},
+          {id:'gshop',  name:'Google Shopping',     color:'#4285f4', budgetPct:25, cpm:250, ctr:2.5, cvr:3.8, freq:2.0, aov:800},
+          {id:'qcom',   name:'Quick Commerce Ads',  color:'#f5a623', budgetPct:25, cpm:180, ctr:1.2, cvr:4.5, freq:2.5, aov:800},
+          {id:'youtube',name:'YouTube Ads',         color:'#ff0000', budgetPct:10, cpm:90,  ctr:0.6, cvr:1.0, freq:4.0, aov:800},
+          {id:'email',  name:'Email / WhatsApp',    color:'#ce93d8', budgetPct:5,  cpm:7,   ctr:3.0, cvr:5.0, freq:1.0, aov:800},
+        ]},
+      { id:'d2c_electronics', label:'Electronics & Tech', desc:'High-consideration purchase campaigns for gadgets, wearables, and accessories.',
+        channels:[
+          {id:'gsearch',  name:'Google Search',       color:'#4285f4', budgetPct:30, cpm:500, ctr:3.5, cvr:3.0, freq:1.5, aov:8000},
+          {id:'gshop',    name:'Google Shopping',     color:'#fbbc04', budgetPct:25, cpm:320, ctr:3.0, cvr:2.5, freq:2.0, aov:8000},
+          {id:'meta',     name:'Meta Ads',             color:'#00ce48', budgetPct:20, cpm:170, ctr:1.2, cvr:1.8, freq:3.0, aov:8000},
+          {id:'youtube',  name:'YouTube Ads',         color:'#ff0000', budgetPct:15, cpm:110, ctr:0.8, cvr:1.2, freq:4.0, aov:8000},
+          {id:'retarget', name:'Retargeting',         color:'#ce93d8', budgetPct:10, cpm:85,  ctr:2.0, cvr:5.5, freq:7.0, aov:8000},
+        ]},
+    ]
+  }
+};
+
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let ST = { bizType:'b2b', subTabId:'b2b_lead', duration:1, totalBudget:1000000, channels:[] };
+let SCEN = { A:null, B:null };
+let CH = { budgetDonut:null, resultsDonut:null, radar:null, scatter:null };
+let advisorOpen = true;
+let lastChangedIdx = -1;
+
+// ══════════════════════════════════════════════════════
+//  NUMBER FORMATTING
+// ══════════════════════════════════════════════════════
+function indFmt(n) {
+  if (isNaN(n)||!isFinite(n)) return '0';
+  n = Math.round(n);
+  let s=String(Math.abs(n)), l=s.slice(-3), r=s.slice(0,-3);
+  if (r) r=r.replace(/\B(?=(\d{2})+(?!\d))/g,',');
+  return (n<0?'-':'')+(r?r+','+l:l);
+}
+function short(n) {
+  if (!isFinite(n)||isNaN(n)) return '—';
+  if (n>=10000000) return 'Rs '+(n/10000000).toFixed(n%10000000===0?0:1)+'Cr';
+  if (n>=100000)   return 'Rs '+(n/100000).toFixed(n%100000===0?0:1)+'L';
+  if (n>=1000)     return 'Rs '+(n/1000).toFixed(n%1000===0?0:1)+'K';
+  return 'Rs '+n.toFixed(0);
+}
+function shortN(n) {
+  if (!isFinite(n)||isNaN(n)) return '—';
+  if (n>=10000000) return (n/10000000).toFixed(2)+'Cr';
+  if (n>=100000)   return (n/100000).toFixed(1)+'L';
+  if (n>=1000)     return (n/1000).toFixed(1)+'K';
+  return n.toFixed(0);
+}
+function pct(n) { return (isFinite(n)?n:0).toFixed(1)+'%'; }
+function fmtDate(d) { return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+
+// ══════════════════════════════════════════════════════
+//  CALCULATIONS
+// ══════════════════════════════════════════════════════
+function calcCh(ch, tb) {
+  const bud=ch.budgetPct/100*tb;
+  const imp=ch.cpm>0?(bud/ch.cpm)*1000:0;
+  const reach=ch.freq>0?imp/ch.freq:imp;
+  const clicks=imp*(ch.ctr/100);
+  const cpc=clicks>0?bud/clicks:0;
+  const res=clicks*(ch.cvr/100);
+  const cpr=res>0?bud/res:0;
+  const rev=res*(ch.aov||0);
+  const roas=bud>0?rev/bud:0;
+  const eff=bud>0?res/bud:0;
+  return {bud,imp,reach,clicks,cpc,res,cpr,rev,roas,eff};
+}
+function calcAll() { return ST.channels.map(ch=>calcCh(ch,ST.totalBudget)); }
+const cfg=()=>BIZ[ST.bizType];
+const sub=()=>cfg().subTabs.find(s=>s.id===ST.subTabId);
+
+// ══════════════════════════════════════════════════════
+//  TABS
+// ══════════════════════════════════════════════════════
+function renderBizTabs() {
+  document.querySelectorAll('.biz-tab[data-biz]').forEach(tab=>{
+    const biz=tab.dataset.biz; tab.className='biz-tab';
+    if(biz===ST.bizType) tab.classList.add('biz-active',biz+'-active');
+  });
+}
+function renderSubTabs() {
+  const c=cfg();
+  document.getElementById('subTabsRow').innerHTML=c.subTabs.map(st=>{
+    const act=st.id===ST.subTabId;
+    return `<div class="sub-tab${act?' sub-active sub-'+ST.bizType:''}" onclick="switchSub('${st.id}')">${st.label}</div>`;
+  }).join('');
+  document.getElementById('tabDescBar').textContent=sub()?.desc||'';
+}
+function loadChannels() { ST.channels=(sub()?.channels||[]).map(c=>({...c})); }
+function switchBiz(biz) {
+  if(biz===ST.bizType) return;
+  ST.bizType=biz; ST.subTabId=BIZ[biz].subTabs[0].id; lastChangedIdx=-1;
+  loadChannels(); renderBizTabs(); renderSubTabs(); buildTable(); recalcAll();
+}
+function switchSub(id) {
+  ST.subTabId=id; lastChangedIdx=-1;
+  loadChannels(); renderSubTabs(); buildTable(); recalcAll();
+}
+document.getElementById('bizTabsRow').addEventListener('click',e=>{
+  const t=e.target.closest('.biz-tab[data-biz]'); if(t) switchBiz(t.dataset.biz);
+});
+
+// ══════════════════════════════════════════════════════
+//  TABLE BUILD
+// ══════════════════════════════════════════════════════
+function TH(label,tip,xc){
+  return `<th class="${xc||''}"><div class="th-inner">${label}<div class="tooltip-wrap"><span class="info-icon">i</span><div class="tooltip-box">${tip}</div></div></div></th>`;
+}
+function buildTable() {
+  const c=cfg(), sr=c.showRevenue;
+  document.getElementById('thead').innerHTML=`
+    <tr style="border-bottom:none">
+      <th rowspan="2" style="vertical-align:middle"><div class="th-inner">Channel</div></th>
+      <th colspan="${sr?7:6}" style="text-align:center;font-size:10px;letter-spacing:.12em;color:#4fc3f7;border-bottom:1px solid #1a3a5c;background:#061526">▸ INPUT PARAMETERS</th>
+      <th colspan="${sr?8:6}" style="text-align:center;font-size:10px;letter-spacing:.12em;color:#00ce48;border-bottom:1px solid #0a2a1a;background:#071e12">▸ AUTO-CALCULATED OUTPUTS</th>
+    </tr>
+    <tr>
+      ${TH('Budget %','% of total monthly budget. All channels must sum to 100%.','col-group-input')}
+      ${TH('Budget Rs','= Budget% × Total Budget. Edit either; both sync instantly.','col-group-input')}
+      ${TH('CPM Rs','Cost Per Mille — rate per 1,000 impressions. Benchmark you set.','col-group-input')}
+      ${TH('CTR %','Click-Through Rate. Benchmark you set — does not change with budget.','col-group-input')}
+      ${TH('CVR %','Conversion Rate — % of clicks → '+c.resultLabel.toLowerCase()+'. Benchmark you set.','col-group-input')}
+      ${TH('Freq','Frequency — avg. ad views per unique user. Reach = Impressions ÷ Freq.','col-group-input')}
+      ${sr?TH('AOV Rs','Average Order Value. Benchmark you set.','col-group-input'):''}
+      ${TH('Impressions','AUTO: (Budget ÷ CPM) × 1,000','col-group-output')}
+      ${TH('Reach','AUTO: Impressions ÷ Frequency','col-group-output')}
+      ${TH('Clicks','AUTO: Impressions × (CTR ÷ 100)','col-group-output')}
+      ${TH('CPC Rs','AUTO: Budget ÷ Clicks','col-group-output')}
+      ${TH(c.resultLabel,'AUTO: Clicks × (CVR ÷ 100)','col-group-output')}
+      ${TH(c.cprLabel+' Rs','AUTO: Budget ÷ Results. Lower = more efficient.','col-group-output')}
+      ${sr?TH('Revenue Rs','AUTO: Results × AOV','col-group-output'):''}
+      ${sr?TH('ROAS','AUTO: Revenue ÷ Budget. Target >3x','col-group-output'):''}
+    </tr>`;
+  const tbody=document.getElementById('tbody');
+  tbody.innerHTML='';
+  ST.channels.forEach((ch,i)=>{
+    const fstar=ch.freq===1.0?`<div class="tooltip-wrap"><span class="info-icon" style="color:var(--accent)">★</span><div class="tooltip-box">Frequency 1.0 — every impression is a unique user.</div></div>`:'';
+    const tr=document.createElement('tr'); tr.id='tr'+i;
+    tr.innerHTML=`
+      <td><div class="ch-name"><div class="ch-dot" style="background:${ch.color}"></div><span class="ch-label">${ch.name}</span>${fstar}</div></td>
+      <td class="input-cell"><input id="p${i}" value="${ch.budgetPct.toFixed(1)}" data-f="budgetPct" data-i="${i}" autocomplete="off"></td>
+      <td class="input-cell"><input id="b${i}" value="${indFmt(Math.round(ch.budgetPct/100*ST.totalBudget))}" data-f="budgetRs" data-i="${i}" autocomplete="off"></td>
+      <td class="input-cell"><input id="m${i}" value="${ch.cpm}" data-f="cpm" data-i="${i}" autocomplete="off"></td>
+      <td class="input-cell"><input id="t${i}" value="${ch.ctr}" data-f="ctr" data-i="${i}" autocomplete="off"></td>
+      <td class="input-cell"><input id="v${i}" value="${ch.cvr}" data-f="cvr" data-i="${i}" autocomplete="off"></td>
+      <td class="input-cell"><input id="f${i}" value="${ch.freq}" data-f="freq" data-i="${i}" autocomplete="off"></td>
+      ${sr?`<td class="input-cell"><input id="a${i}" value="${ch.aov}" data-f="aov" data-i="${i}" autocomplete="off"></td>`:''}
+      <td class="oc" id="oi${i}">—</td><td class="oc" id="or${i}">—</td>
+      <td class="oc" id="oc${i}">—</td><td class="oc" id="opc${i}">—</td>
+      <td class="oc" id="ores${i}">—</td><td class="oc" id="ocpr${i}">—</td>
+      ${sr?`<td class="oc" id="orev${i}">—</td>`:''}
+      ${sr?`<td class="oc" id="oros${i}">—</td>`:''}`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input',onCellInput);
+    inp.addEventListener('blur',onCellBlur);
+    inp.addEventListener('focus',e=>e.target.select());
+  });
+  document.getElementById('tfoot').innerHTML=`<tr class="total-row">
+    <td><strong>TOTAL</strong></td>
+    <td id="tpct" class="oc">—</td><td id="tbud" class="oc">—</td>
+    <td id="tcpm" class="oc">—</td><td id="tctr" class="oc">—</td>
+    <td id="tcvr" class="oc">—</td><td id="tfreq" class="oc">—</td>
+    ${sr?'<td id="taov" class="oc">—</td>':''}
+    <td id="timp" class="oc">—</td><td id="treach" class="oc">—</td>
+    <td id="tclk" class="oc">—</td><td id="tcpc" class="oc">—</td>
+    <td id="tres" class="oc">—</td><td id="tcpr" class="oc">—</td>
+    ${sr?'<td id="trev" class="oc">—</td>':''}
+    ${sr?'<td id="troas" class="oc">—</td>':''}
+  </tr>`;
+}
+
+// ══════════════════════════════════════════════════════
+//  CELL INPUT
+// ══════════════════════════════════════════════════════
+function onCellInput(e) {
+  const i=parseInt(e.target.dataset.i), f=e.target.dataset.f;
+  const v=parseFloat(e.target.value.replace(/,/g,''));
+  if (isNaN(v)) return;
+  if      (f==='budgetPct') { ST.channels[i].budgetPct=v; lastChangedIdx=i; }
+  else if (f==='budgetRs')  { ST.channels[i].budgetPct=ST.totalBudget>0?(v/ST.totalBudget)*100:0; lastChangedIdx=i; }
+  else if (f==='cpm')       { ST.channels[i].cpm=Math.max(0.01,v); lastChangedIdx=-1; }
+  else if (f==='ctr')       { ST.channels[i].ctr=v; lastChangedIdx=-1; }
+  else if (f==='cvr')       { ST.channels[i].cvr=v; lastChangedIdx=-1; }
+  else if (f==='freq')      { ST.channels[i].freq=Math.max(0.1,v); lastChangedIdx=-1; }
+  else if (f==='aov')       { ST.channels[i].aov=v; lastChangedIdx=-1; }
+  recalcAll();
+}
+function onCellBlur(e) {
+  const f=e.target.dataset.f, i=parseInt(e.target.dataset.i);
+  if (f==='budgetRs') e.target.value=indFmt(Math.round(ST.channels[i].budgetPct/100*ST.totalBudget));
+  if (f==='budgetPct') e.target.value=ST.channels[i].budgetPct.toFixed(1);
+}
+
+// ══════════════════════════════════════════════════════
+//  UPDATE OUTPUTS
+// ══════════════════════════════════════════════════════
+const setEl =(id,h)=>{ const e=document.getElementById(id); if(e) e.innerHTML=h; };
+const setText=(id,t)=>{ const e=document.getElementById(id); if(e) e.textContent=t; };
+function N(v,dur){ const val=v*dur; return `<div class="tooltip-wrap"><span>${shortN(val)}</span><div class="tooltip-box">Full: ${Math.round(val).toLocaleString('en-IN')}</div></div>`; }
+function R(v){ return `<div class="tooltip-wrap"><span>${short(v)}</span><div class="tooltip-box">Rs ${indFmt(Math.round(v))}</div></div>`; }
+
+function updateOutputs(calcs) {
+  const dur=ST.duration, c=cfg(), sr=c.showRevenue;
+  calcs.forEach((cl,i)=>{
+    setEl('oi'+i,N(cl.imp,dur)); setEl('or'+i,N(cl.reach,dur)); setEl('oc'+i,N(cl.clicks,dur));
+    setEl('opc'+i,R(cl.cpc)); setEl('ores'+i,N(cl.res,dur)); setEl('ocpr'+i,R(cl.cpr));
+    if (sr) {
+      setEl('orev'+i,R(cl.rev*dur));
+      setEl('oros'+i,`<span style="color:${cl.roas>=3?'var(--accent)':cl.roas>=1.5?'var(--warning)':'var(--negative)'}">${cl.roas.toFixed(2)}x</span>`);
+    }
+    const bi=document.getElementById('b'+i); if(bi&&bi!==document.activeElement) bi.value=indFmt(Math.round(cl.bud));
+    const pi=document.getElementById('p'+i); if(pi&&pi!==document.activeElement) pi.value=ST.channels[i].budgetPct.toFixed(1);
+  });
+}
+function updateTotals(calcs) {
+  const dur=ST.duration, c=cfg(), sr=c.showRevenue, tb=ST.totalBudget;
+  const tI=calcs.reduce((s,c)=>s+c.imp,0), tR=calcs.reduce((s,c)=>s+c.reach,0);
+  const tCl=calcs.reduce((s,c)=>s+c.clicks,0), tRes=calcs.reduce((s,c)=>s+c.res,0);
+  const tRev=calcs.reduce((s,c)=>s+c.rev,0);
+  const bCPC=tCl>0?tb/tCl:0, bCPR=tRes>0?tb/tRes:0, bROAS=tb>0?tRev/tb:0;
+  const totPct=ST.channels.reduce((s,c)=>s+c.budgetPct,0);
+  setText('tpct',pct(totPct)); setText('tbud','Rs '+indFmt(Math.round(tb*dur)));
+  setText('timp',shortN(tI*dur)); setText('treach',shortN(tR*dur)); setText('tclk',shortN(tCl*dur));
+  setText('tcpc',short(bCPC)); setText('tres',shortN(tRes*dur)); setText('tcpr',short(bCPR));
+  if(sr){ setText('trev',short(tRev*dur)); setText('troas',bROAS.toFixed(2)+'x'); }
+  const w=document.getElementById('budgetWarning');
+  if(Math.abs(totPct-100)>0.05){ w.style.display='block'; setText('budgetWarnPct',pct(totPct)); } else w.style.display='none';
+  return {tb,tI,tR,tCl,tRes,tRev,bCPC,bCPR,bROAS};
+}
+function updateKPI(tot) {
+  const c=cfg(), dur=ST.duration, sr=c.showRevenue;
+  setText('kpi-budget',short(tot.tb*dur));
+  setText('kpi-budget-sub',dur>1?`${shortN(tot.tb)} × ${dur} months`:'monthly');
+  setText('kpi-imp',shortN(tot.tI*dur));
+  setText('kpi-res-lbl','Total '+c.resultLabel);
+  setText('kpi-res',shortN(tot.tRes*dur));
+  setText('kpi-cpr-lbl','Blended '+c.cprLabel);
+  setText('kpi-cpr',short(tot.bCPR));
+  document.getElementById('kpi-rev-wrap').style.display=sr?'':'none';
+  document.getElementById('kpi-roas-wrap').style.display=sr?'':'none';
+  if(sr){ setText('kpi-rev',short(tot.tRev*dur)); setText('kpi-roas',tot.bROAS.toFixed(2)+'x'); }
+}
+function updateCampaignDisplay() {
+  setText('campaignBudgetVal',short(ST.totalBudget*ST.duration));
+  setText('durationLabel','('+ST.duration+' month'+(ST.duration>1?'s':'')+')');
+}
+function updateTableInterp(calcs) {
+  const c=cfg(), tRes=calcs.reduce((s,c)=>s+c.res,0); if(!tRes) return;
+  const bCPR=ST.totalBudget/tRes; let mBi=0,mRi=0;
+  ST.channels.forEach((_,i)=>{ if(ST.channels[i].budgetPct>ST.channels[mBi].budgetPct)mBi=i; if(calcs[i].res>calcs[mRi].res)mRi=i; });
+  const chA=ST.channels[mBi], chB=ST.channels[mRi];
+  let txt=mBi===mRi
+    ?`💡 <strong>${chA.name}</strong> dominates both spend and results — ${pct(chA.budgetPct)} of budget delivering ${pct(calcs[mRi].res/tRes*100)} of ${c.resultLabel.toLowerCase()}.`
+    :`💡 <strong>${chA.name}</strong> receives the most budget (${pct(chA.budgetPct)}) but <strong>${chB.name}</strong> delivers the most ${c.resultLabel.toLowerCase()} (${pct(calcs[mRi].res/tRes*100)}).`;
+  const under=calcs.map((cl,i)=>cl.cpr>bCPR*3&&cl.res>0?ST.channels[i].name:null).filter(Boolean);
+  if(under.length) txt+=` <span style="color:var(--warning)">${under.join(', ')} ${under.length>1?'are':'is'} significantly underperforming (CPR > 3× blended average).</span>`;
+  document.getElementById('tableInterp').innerHTML=txt;
+}
+
+// ══════════════════════════════════════════════════════
+//  BUDGET ADVISOR
+// ══════════════════════════════════════════════════════
+function updateAdvisor(calcs) {
+  const panel=document.getElementById('advisorPanel'), c=cfg();
+  const tb=ST.totalBudget, tRes=calcs.reduce((s,c)=>s+c.res,0);
+  if(!tRes||ST.channels.length<2){ panel.style.display='none'; return; }
+  const bCPR=tb/tRes, n=ST.channels.length;
+  const ranked=calcs.map((cl,i)=>({idx:i,name:ST.channels[i].name,color:ST.channels[i].color,pct:ST.channels[i].budgetPct,bud:cl.bud,res:cl.res,cpr:cl.cpr,eff:cl.eff,resPct:tRes>0?cl.res/tRes*100:0})).filter(ch=>ch.res>0).sort((a,b)=>a.cpr-b.cpr);
+  if(ranked.length<2){ panel.style.display='none'; return; }
+  const best=ranked[0], worst=ranked[ranked.length-1];
+  const effGap=worst.cpr>0?(worst.cpr-best.cpr)/worst.cpr:0;
+  if(effGap<0.15){ panel.style.display='none'; return; }
+  let source, sourceIsExplicit=lastChangedIdx>=0&&lastChangedIdx<n;
+  if(sourceIsExplicit){ const ci=calcs[lastChangedIdx]; source={idx:lastChangedIdx,name:ST.channels[lastChangedIdx].name,color:ST.channels[lastChangedIdx].color,pct:ST.channels[lastChangedIdx].budgetPct,bud:ci.bud,res:ci.res,cpr:ci.cpr,resPct:tRes>0?ci.res/tRes*100:0}; }
+  else source=ranked[ranked.length-1];
+  const candidates=ranked.filter(ch=>ch.idx!==source.idx).slice(0,3);
+  if(!candidates.length){ panel.style.display='none'; return; }
+  const shiftAmount=Math.round(source.bud*0.10/1000)*1000||5000;
+  const shiftPct=tb>0?shiftAmount/tb*100:0;
+  function simulate(cand,moveRs){ const addedRes=moveRs*cand.eff,lostRes=moveRs*(source.res>0&&source.bud>0?source.res/source.bud:0),netRes=addedRes-lostRes,newTotalRes=tRes+netRes; return{addedRes,lostRes,netRes,newTotalRes}; }
+  panel.style.display='block';
+  let ctx=''; if(sourceIsExplicit){ const over=source.resPct<source.pct; ctx=`You adjusted <strong style="color:${source.color}">${source.name}</strong> to ${pct(source.pct)} of budget (${short(source.bud)}). It delivers <strong>${pct(source.resPct)}</strong> of total ${c.resultLabel.toLowerCase()} at CPR of <strong>${short(source.cpr)}</strong> vs blended ${short(bCPR)}. ${over?`<span style="color:var(--warning)">Getting more budget than results justify.</span> Better channels to reallocate to:`:`Highest-efficiency channels where additional budget would perform best:`}`; }
+  else ctx=`<strong style="color:${source.color}">${source.name}</strong> has the highest CPR at <strong>${short(source.cpr)}</strong> — <strong>${(source.cpr/best.cpr).toFixed(1)}×</strong> more expensive than <strong style="color:${best.color}">${best.name}</strong> (${short(best.cpr)}). Consider reallocating from <strong>${source.name}</strong> to:`;
+  document.getElementById('advisorContext').innerHTML=ctx;
+  setText('advisorSummaryBadge',`— ${candidates.length} suggestion${candidates.length>1?'s':''}`);
+  document.getElementById('advisorCards').innerHTML=candidates.map((cand,rank)=>{
+    const sim=simulate(cand,shiftAmount), isBest=rank===0, ratio=source.cpr>0?source.cpr/cand.cpr:1, effDiff=source.cpr>0?(source.cpr-cand.cpr)/source.cpr*100:0, netSign=sim.netRes>=0;
+    return `<div class="advisor-card${isBest?' best-pick':''}"><div class="advisor-card-head"><div class="advisor-ch-name"><div class="advisor-ch-dot" style="background:${cand.color}"></div>${cand.name}</div><span class="advisor-badge ${isBest?'badge-best':rank===1?'badge-good':'badge-neutral'}">${isBest?'Best Pick':rank===1?'Good Option':'Consider'}</span></div><div class="advisor-metrics"><div class="advisor-metric-row"><span class="aml">Current CPR</span><span class="amv positive">${short(cand.cpr)}</span></div><div class="advisor-metric-row"><span class="aml">vs ${source.name}</span><span class="amv positive">${effDiff.toFixed(0)}% cheaper per result</span></div><div class="advisor-metric-row"><span class="aml">Current Budget</span><span class="amv">${pct(cand.pct)} (${short(cand.bud)})</span></div></div><div class="advisor-impact">Move <strong>${short(shiftAmount)}</strong> (${shiftPct.toFixed(1)}%) from <strong>${source.name}</strong> here:<br><span style="color:var(--accent)">↑ +${shortN(sim.addedRes)} more ${c.resultLabel.toLowerCase()}</span> gained<br><span style="color:var(--warning)">↓ -${shortN(sim.lostRes)} ${c.resultLabel.toLowerCase()}</span> lost from ${source.name}<br><strong style="color:${netSign?'var(--accent)':'var(--negative)'}">Net: ${sim.netRes>=0?'+':''}${shortN(sim.netRes)} ${c.resultLabel.toLowerCase()} overall</strong></div><button class="apply-btn" onclick="applyReallocation(${source.idx},${cand.idx},${shiftPct.toFixed(2)})">↗ Apply this shift</button></div>`;
+  }).join('');
+  document.getElementById('advisorNote').textContent=`Suggestions are based on CPR efficiency. Click "Apply" to automatically shift budget between channels.`;
+}
+function applyReallocation(fromIdx,toIdx,shiftPct) {
+  const from=ST.channels[fromIdx],to=ST.channels[toIdx]; if(!from||!to) return;
+  if(from.budgetPct<shiftPct){ showToast('⚠ Not enough budget in '+from.name+' to shift.'); return; }
+  from.budgetPct=Math.max(0,from.budgetPct-shiftPct); to.budgetPct+=shiftPct; lastChangedIdx=toIdx;
+  buildTable(); recalcAll(); showToast(`✓ Moved ${pct(shiftPct)} from ${from.name} → ${to.name}`);
+}
+function toggleAdvisor() {
+  advisorOpen=!advisorOpen;
+  document.getElementById('advisorBody').style.display=advisorOpen?'':'none';
+  document.getElementById('advisorToggleIcon').textContent=advisorOpen?'▲':'▼';
+}
+
+// ══════════════════════════════════════════════════════
+//  CHARTS
+// ══════════════════════════════════════════════════════
+const CANIM={duration:800,easing:'easeOutQuart'};
+function killChart(k){ if(CH[k]){ CH[k].destroy(); CH[k]=null; } }
+
+function drawBudgetDonut(calcs) {
+  killChart('budgetDonut');
+  const ctx=document.getElementById('cBudget').getContext('2d');
+  CH.budgetDonut=new Chart(ctx,{type:'doughnut',data:{labels:ST.channels.map(c=>c.name),datasets:[{data:ST.channels.map(c=>c.budgetPct),backgroundColor:ST.channels.map(c=>c.color),borderWidth:2,borderColor:'#07192e'}]},options:{animation:CANIM,cutout:'68%',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.parsed.toFixed(1)}%`}}}}});
+  setText('dc-bval',short(ST.totalBudget*ST.duration));
+  document.getElementById('bLegend').innerHTML=ST.channels.map(c=>`<div class="legend-item"><div class="legend-dot" style="background:${c.color}"></div><span>${c.name}</span>&nbsp;<span style="color:var(--text);font-weight:700">${c.budgetPct.toFixed(1)}%</span></div>`).join('');
+  const s=[...ST.channels].sort((a,b)=>b.budgetPct-a.budgetPct), oPct=s.slice(2).reduce((sum,c)=>sum+c.budgetPct,0);
+  setText('bInterp',`${s[0].budgetPct.toFixed(0)}% allocated to ${s[0].name}. ${s[1]?.name} gets ${s[1]?.budgetPct.toFixed(0)}%, leaving ${oPct.toFixed(0)}% across ${s.slice(2).length} others.`);
+}
+function drawResultsDonut(calcs) {
+  killChart('resultsDonut');
+  const c=cfg(), tRes=calcs.reduce((s,c)=>s+c.res,0);
+  const ctx=document.getElementById('cResults').getContext('2d');
+  CH.resultsDonut=new Chart(ctx,{type:'doughnut',data:{labels:ST.channels.map(c=>c.name),datasets:[{data:calcs.map(c=>c.res),backgroundColor:ST.channels.map(c=>c.color),borderWidth:2,borderColor:'#07192e'}]},options:{animation:CANIM,cutout:'68%',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const p=tRes>0?(ctx.parsed/tRes*100).toFixed(1):0;return ` ${ctx.label}: ${shortN(ctx.parsed*ST.duration)} (${p}%)`;}}}}}}); 
+  setText('dc-rval',shortN(tRes*ST.duration)); setText('dc-rlbl','Total '+c.resultLabel); setText('resDonutTitle',c.resultLabel+' Split');
+  document.getElementById('rLegend').innerHTML=calcs.map((cl,i)=>{const p=tRes>0?(cl.res/tRes*100).toFixed(1):0;return `<div class="legend-item"><div class="legend-dot" style="background:${ST.channels[i].color}"></div><span>${ST.channels[i].name}</span>&nbsp;<span style="color:var(--text);font-weight:700">${p}%</span></div>`;}).join('');
+  const topI=calcs.reduce((b,c,i)=>c.res>calcs[b].res?i:b,0), tCh=ST.channels[topI], tP=tRes>0?calcs[topI].res/tRes*100:0;
+  setText('rInterp',tP>tCh.budgetPct?`${tCh.name} is your efficiency leader — ${tP.toFixed(0)}% of ${c.resultLabel.toLowerCase()} from just ${tCh.budgetPct.toFixed(0)}% of budget.`:`${tCh.name} generates ${tP.toFixed(0)}% of all ${c.resultLabel.toLowerCase()}.`);
+}
+function norm(arr,inv){const mn=Math.min(...arr),mx=Math.max(...arr);if(mx===mn)return arr.map(()=>50);return arr.map(v=>{const s=(v-mn)/(mx-mn)*100;return inv?100-s:s;});}
+function drawRadar(calcs) {
+  killChart('radar');
+  const nCTR=norm(ST.channels.map(c=>c.ctr),false),nCVR=norm(ST.channels.map(c=>c.cvr),false),nCPC=norm(calcs.map(c=>c.cpc),true),nCPR=norm(calcs.map(c=>c.cpr),true);
+  const ctx=document.getElementById('cRadar').getContext('2d');
+  CH.radar=new Chart(ctx,{type:'radar',data:{labels:['CTR','CVR','CPC (inv)','CPR (inv)'],datasets:ST.channels.map((ch,i)=>({label:ch.name,data:[nCTR[i],nCVR[i],nCPC[i],nCPR[i]],borderColor:ch.color,backgroundColor:ch.color+'1a',borderWidth:2,pointBackgroundColor:ch.color,pointRadius:3}))},options:{animation:CANIM,responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,grid:{color:'#1a2a4a'},angleLines:{color:'#1a2a4a'},ticks:{display:false},pointLabels:{color:'#8892a0',font:{size:11,family:'Inter',weight:'700'}}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.r.toFixed(0)}`}}}}});
+  const tots=ST.channels.map((_,i)=>nCTR[i]+nCVR[i]+nCPC[i]+nCPR[i]);
+  const bi=tots.indexOf(Math.max(...tots)),wi=tots.indexOf(Math.min(...tots));
+  setText('radarInterp',`${ST.channels[bi].name} is most balanced across all 4 metrics. ${ST.channels[wi].name} has the most room for optimization.`);
+}
+function drawScatter(calcs) {
+  killChart('scatter');
+  const tRes=calcs.reduce((s,c)=>s+c.res,0);
+  const pts=ST.channels.map((ch,i)=>({x:ch.budgetPct,y:tRes>0?calcs[i].res/tRes*100:0,label:ch.name,color:ch.color}));
+  const maxV=Math.max(...pts.map(p=>Math.max(p.x,p.y)))*1.15||10;
+  const ds=pts.map(p=>({label:p.label,data:[{x:p.x,y:p.y}],backgroundColor:p.color,borderColor:p.color,pointRadius:7,pointHoverRadius:9}));
+  ds.push({label:'Break-even',data:[{x:0,y:0},{x:maxV,y:maxV}],type:'line',borderColor:'#8892a0',borderDash:[6,4],borderWidth:1,pointRadius:0,fill:false});
+  const ctx=document.getElementById('cScatter').getContext('2d');
+  CH.scatter=new Chart(ctx,{type:'scatter',data:{datasets:ds},options:{animation:CANIM,responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'Budget Share %',color:'#8892a0',font:{size:11}},min:0,max:maxV,grid:{color:'#1a2a4a'},ticks:{color:'#8892a0',font:{size:10}}},y:{title:{display:true,text:'Results Share %',color:'#8892a0',font:{size:11}},min:0,max:maxV,grid:{color:'#1a2a4a'},ticks:{color:'#8892a0',font:{size:10}}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.raw?.x!=null?` ${ctx.dataset.label}: Budget ${ctx.raw.x.toFixed(1)}% → Results ${ctx.raw.y.toFixed(1)}%`:''}}}}});
+  const eff=pts.filter(p=>p.y>p.x);
+  setText('scatterInterp',`${eff.length} of ${ST.channels.length} channels outperforming budget share: ${eff.map(p=>p.label).join(', ')||'none'}.`);
+}
+function drawEffRanking(calcs) {
+  const c=cfg(), n=ST.channels.length;
+  const all=calcs.map((cl,i)=>({name:ST.channels[i].name,color:ST.channels[i].color,cpr:cl.cpr,res:cl.res})).sort((a,b)=>{if(a.res===0&&b.res===0)return 0;if(a.res===0)return 1;if(b.res===0)return-1;return a.cpr-b.cpr;});
+  const mxCPR=Math.max(...all.filter(x=>x.res>0).map(x=>x.cpr))||1;
+  const tier=i=>i<Math.ceil(n/3)?'var(--accent)':i<Math.ceil(2*n/3)?'var(--warning)':'var(--negative)';
+  document.getElementById('effRanking').innerHTML=all.map((ch,i)=>`<div class="eff-row"><div class="eff-rank-num">${i+1}</div><div class="eff-dot" style="background:${ch.color}"></div><div class="eff-name">${ch.name}</div><div class="eff-bar-wrap"><div class="eff-bar" style="width:${ch.res>0?Math.max(4,ch.cpr/mxCPR*100):0}%;background:${tier(i)}"></div></div><div class="eff-cpr">${ch.res>0?short(ch.cpr):'—'}</div></div>`).join('');
+  const best=all[0],worst=all[n-1];
+  if(best.res>0&&worst.res>0&&best!==worst) setText('effInterp',`${best.name} converts at ${short(best.cpr)} per ${c.resultLabel.slice(0,-1).toLowerCase()} — ${(worst.cpr/best.cpr).toFixed(1)}× more efficient than ${worst.name}.`);
+}
+
+// ══════════════════════════════════════════════════════
+//  MAIN RECALC
+// ══════════════════════════════════════════════════════
+function recalcAll() {
+  const calcs=calcAll();
+  updateOutputs(calcs);
+  const tot=updateTotals(calcs);
+  updateChCountBadge();
+  updateKPI(tot);
+  updateTableInterp(calcs);
+  updateAdvisor(calcs);
+  drawBudgetDonut(calcs);
+  drawResultsDonut(calcs);
+  drawRadar(calcs);
+  drawScatter(calcs);
+  drawEffRanking(calcs);
+  updateCampaignDisplay();
+}
+
+// ══════════════════════════════════════════════════════
+//  BUDGET INPUT & DURATION
+// ══════════════════════════════════════════════════════
+document.getElementById('totalBudgetInput').addEventListener('input',e=>{
+  const raw=e.target.value.replace(/[^0-9]/g,'');
+  ST.totalBudget=parseInt(raw)||0;
+  e.target.value=raw?indFmt(parseInt(raw)):'';
+  recalcAll();
+});
+document.getElementById('durationSelect').addEventListener('change',e=>{ ST.duration=parseInt(e.target.value); recalcAll(); });
+
+// ══════════════════════════════════════════════════════
+//  RESET
+// ══════════════════════════════════════════════════════
+function resetToDefaults() {
+  ST.duration=1; ST.totalBudget=1000000; lastChangedIdx=-1;
+  document.getElementById('totalBudgetInput').value='10,00,000';
+  document.getElementById('durationSelect').value='1';
+  loadChannels(); buildTable(); recalcAll();
+}
+
+// ══════════════════════════════════════════════════════
+//  SCENARIO — Redesigned
+// ══════════════════════════════════════════════════════
+function snap(label) {
+  const calcs=calcAll(), c=cfg();
+  const tRes=calcs.reduce((s,c)=>s+c.res,0), tRev=calcs.reduce((s,c)=>s+c.rev,0), tI=calcs.reduce((s,c)=>s+c.imp,0);
+  const nameInput=document.getElementById('scenName'+label);
+  const customName=nameInput?.value.trim();
+  const bizLabel=cfg().label, subLabel=sub()?.label;
+  return {
+    label: customName || `Scenario ${label}`,
+    bizType:ST.bizType, subTabId:ST.subTabId, bizLabel, subLabel,
+    duration:ST.duration, totalBudget:ST.totalBudget,
+    channels:ST.channels.map(c=>({...c})),
+    tRes, tRev, tI,
+    bCPR:tRes>0?ST.totalBudget/tRes:0,
+    bROAS:ST.totalBudget>0?tRev/ST.totalBudget:0,
+    cfg:{resultLabel:c.resultLabel,showRevenue:c.showRevenue},
+    savedAt: new Date()
+  };
+}
+
+function saveScenario(lbl) {
+  SCEN[lbl]=snap(lbl);
+  updateScenPills();
+  if(SCEN.A&&SCEN.B) renderScen();
+}
+
+function clearScenarios() {
+  SCEN={A:null,B:null};
+  document.getElementById('scenarioCompare').style.display='none';
+  document.getElementById('scenPills').innerHTML='';
+}
+
+function updateScenPills() {
+  const pills=[];
+  if(SCEN.A) pills.push(`<span class="saved-pill pill-a">✓ A: ${SCEN.A.label} <span class="saved-pill-sub">${SCEN.A.bizLabel} › ${SCEN.A.subLabel} · ${short(SCEN.A.totalBudget)}</span></span>`);
+  if(SCEN.B) pills.push(`<span class="saved-pill pill-b">✓ B: ${SCEN.B.label} <span class="saved-pill-sub">${SCEN.B.bizLabel} › ${SCEN.B.subLabel} · ${short(SCEN.B.totalBudget)}</span></span>`);
+  if(pills.length&&(!SCEN.A||!SCEN.B)) pills.push(`<span style="font-size:12px;color:var(--text-secondary)">← Now ${!SCEN.A?'save Scenario A':'change something and save Scenario B'} to compare.</span>`);
+  document.getElementById('scenPills').innerHTML=pills.join('');
+}
+
+function renderScen() {
+  const A=SCEN.A, B=SCEN.B;
+
+  // ── Core computed values ──
+  const aRes  = A.tRes * A.duration;
+  const bRes  = B.tRes * B.duration;
+  const aCPR  = A.bCPR;
+  const bCPR  = B.bCPR;
+  const aImp  = A.tI   * A.duration;
+  const bImp  = B.tI   * B.duration;
+  const aBud  = A.totalBudget * A.duration;
+  const bBud  = B.totalBudget * B.duration;
+  const aRev  = A.tRev * A.duration;
+  const bRev  = B.tRev * B.duration;
+  // Results per lakh invested — true value-for-money metric
+  const aVPI  = aBud > 0 ? (aRes / aBud) * 100000 : 0;
+  const bVPI  = bBud > 0 ? (bRes / bBud) * 100000 : 0;
+
+  // ── % differences ──
+  const resDiff = aRes > 0 ? (bRes - aRes) / aRes * 100 : 0;
+  const cprDiff = aCPR > 0 ? (bCPR - aCPR) / aCPR * 100 : 0;
+  const budDiff = A.totalBudget > 0 ? (B.totalBudget - A.totalBudget) / A.totalBudget * 100 : 0;
+  const impDiff = aImp > 0 ? (bImp - aImp) / aImp * 100 : 0;
+  const vpiDiff = aVPI > 0 ? (bVPI - aVPI) / aVPI * 100 : 0;
+
+  // CPR equality: when only budget changes but channel mix + benchmarks are same,
+  // CPR is mathematically identical (budget and results scale by the same factor).
+  const cprAreEqual = Math.abs(cprDiff) < 0.5;
+
+  // ── Winner logic ──
+  let winnerHtml = '', summaryText = '';
+  if (cprAreEqual) {
+    if (Math.abs(resDiff) < 1) {
+      winnerHtml = `<div class="scen-winner-badge scen-winner-tie">= Identical Efficiency</div>`;
+      summaryText = `Both scenarios have the <strong>same CPR of ${short(aCPR)}</strong> and produce the same results per rupee. The channel mix and benchmarks are unchanged — only the total investment differs.`;
+    } else if (bRes > aRes) {
+      winnerHtml = `<div class="scen-winner-badge scen-winner-b">📈 ${B.label} — Higher Volume</div>`;
+      summaryText = `Both scenarios have the <strong>same CPR of ${short(aCPR)}</strong> because the channel mix and benchmarks are unchanged. <strong>${B.label}</strong> simply invests more (${short(bBud)} total), generating <strong>${shortN(bRes)} ${B.cfg.resultLabel.toLowerCase()}</strong> vs <strong>${shortN(aRes)}</strong>. To improve efficiency (lower CPR), change the channel allocation or platform benchmarks.`;
+    } else {
+      winnerHtml = `<div class="scen-winner-badge scen-winner-a">📈 ${A.label} — Higher Volume</div>`;
+      summaryText = `Both scenarios have the <strong>same CPR of ${short(aCPR)}</strong>. <strong>${A.label}</strong> invests more, generating higher volume. Efficiency per rupee is identical in both.`;
+    }
+  } else if (bVPI > aVPI && bRes >= aRes) {
+    winnerHtml = `<div class="scen-winner-badge scen-winner-b">🏆 ${B.label} Outperforms</div>`;
+    summaryText = `<strong>${B.label}</strong> delivers <strong>${shortN(bRes)} ${B.cfg.resultLabel.toLowerCase()}</strong> at <strong>${short(bCPR)}</strong> per result — <strong>${Math.abs(cprDiff).toFixed(0)}% ${bCPR < aCPR ? 'cheaper' : 'costlier'}</strong> than ${A.label}'s ${short(aCPR)}. Value index: <strong>${bVPI.toFixed(1)} results per Rs 1L</strong> vs ${aVPI.toFixed(1)}.`;
+  } else if (aVPI > bVPI && aRes >= bRes) {
+    winnerHtml = `<div class="scen-winner-badge scen-winner-a">🏆 ${A.label} Outperforms</div>`;
+    summaryText = `<strong>${A.label}</strong> is more efficient — CPR of <strong>${short(aCPR)}</strong> vs <strong>${short(bCPR)}</strong>, generating <strong>${aVPI.toFixed(1)} results per Rs 1L</strong> vs ${bVPI.toFixed(1)}. Higher budget does not always mean better CPR.`;
+  } else if (bRes > aRes) {
+    winnerHtml = `<div class="scen-winner-badge scen-winner-b">📊 ${B.label} — More Volume</div>`;
+    summaryText = `<strong>${B.label}</strong> generates <strong>${Math.abs(resDiff).toFixed(0)}% more ${B.cfg.resultLabel.toLowerCase()}</strong> (${shortN(bRes)} vs ${shortN(aRes)}) at a CPR of <strong>${short(bCPR)}</strong> vs <strong>${short(aCPR)}</strong>. The extra spend buys more volume at ${bCPR > aCPR ? 'slightly higher' : 'comparable'} cost per result.`;
+  } else {
+    winnerHtml = `<div class="scen-winner-badge scen-winner-a">📊 ${A.label} — Better Efficiency</div>`;
+    summaryText = `<strong>${A.label}</strong> achieves a lower CPR of <strong>${short(aCPR)}</strong> vs <strong>${short(bCPR)}</strong>. With <strong>${aVPI.toFixed(1)} results per Rs 1L</strong>, it extracts more value per rupee spent.`;
+  }
+  document.getElementById('scenSummaryBanner').innerHTML = `<div class="scen-summary-text">${summaryText}</div>${winnerHtml}`;
+
+  // ── CPR explanation note ──
+  const cprNoteHtml = cprAreEqual ? `
+    <div style="background:rgba(79,195,247,.08);border:1px solid rgba(79,195,247,.25);border-radius:6px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:#4fc3f7;line-height:1.6;">
+      <strong>ℹ Why is CPR the same in both scenarios?</strong><br>
+      <span style="color:var(--text-secondary)">CPR = Budget ÷ Results. When only the total budget changes but the channel allocation percentages and all benchmarks (CPM, CTR, CVR) remain the same, both budget and results scale by the same factor — so CPR stays constant. <strong style="color:var(--text)">To create a genuine CPR difference between scenarios, change the channel allocation percentages or adjust a channel's CPM, CTR, or CVR benchmarks.</strong></span>
+    </div>` : '';
+
+  // ── What changed grid ──
+  const changesHtml = [
+    { label:'Monthly Budget',           aVal:short(A.totalBudget), bVal:short(B.totalBudget), diff:budDiff,  hb:true  },
+    { label:'Total Campaign Spend',     aVal:short(aBud),          bVal:short(bBud),          diff:budDiff,  hb:true  },
+    { label:'Total Impressions',        aVal:shortN(aImp),         bVal:shortN(bImp),         diff:impDiff,  hb:true  },
+    { label:'Total '+A.cfg.resultLabel, aVal:shortN(aRes),         bVal:shortN(bRes),         diff:resDiff,  hb:true  },
+    { label:'Blended CPR',              aVal:short(aCPR),          bVal:short(bCPR),          diff:cprDiff,  hb:false },
+    { label:'Results per Rs 1L Spent',  aVal:aVPI.toFixed(1),      bVal:bVPI.toFixed(1),      diff:vpiDiff,  hb:true  },
+    ...(A.cfg.showRevenue||B.cfg.showRevenue?[{ label:'Projected Revenue', aVal:short(aRev), bVal:short(bRev), diff:aRev>0?(bRev-aRev)/aRev*100:0, hb:true }]:[]),
+    { label:'Campaign Duration',   aVal:A.duration+'mo',                    bVal:B.duration+'mo',                    diff:null, hb:null },
+    { label:'Campaign Type',       aVal:A.bizLabel+' > '+A.subLabel,        bVal:B.bizLabel+' > '+B.subLabel,        diff:null, hb:null },
+  ].map(ch => {
+    let deltaHtml = '';
+    if (ch.diff !== null && Math.abs(ch.diff) > 0.5) {
+      const better = (ch.hb && ch.diff > 0) || (!ch.hb && ch.diff < 0);
+      deltaHtml = `<span class="change-delta ${better ? 'delta-up' : 'delta-down'}">${ch.diff > 0 ? '+' : ''}${ch.diff.toFixed(1)}%</span>`;
+    } else if (ch.diff !== null) {
+      deltaHtml = `<span class="change-delta delta-same">same</span>`;
+    }
+    return `<div class="change-item"><div class="change-label">${ch.label}</div><div class="change-vals"><span class="change-a">${ch.aVal}</span><span class="change-arrow">to</span><span class="change-b">${ch.bVal}</span>${deltaHtml}</div></div>`;
+  }).join('');
+
+  document.getElementById('scenWhatChanged').innerHTML = `
+    ${cprNoteHtml}
+    <div class="scen-what-changed-title">Full Metric Comparison — Scenario A vs B</div>
+    <div class="change-grid">${changesHtml}</div>`;
+
+  // ── Compute reach + clicks from saved channel data (accurate) ──
+  const aTotClicks = A.channels.reduce((s,ch)=>{ const bud=ch.budgetPct/100*A.totalBudget, imp=ch.cpm>0?bud/ch.cpm*1000:0; return s+imp*(ch.ctr/100); },0)*A.duration;
+  const bTotClicks = B.channels.reduce((s,ch)=>{ const bud=ch.budgetPct/100*B.totalBudget, imp=ch.cpm>0?bud/ch.cpm*1000:0; return s+imp*(ch.ctr/100); },0)*B.duration;
+  const aTotReach  = A.channels.reduce((s,ch)=>{ const bud=ch.budgetPct/100*A.totalBudget, imp=ch.cpm>0?bud/ch.cpm*1000:0; return s+(ch.freq>0?imp/ch.freq:imp); },0)*A.duration;
+  const bTotReach  = B.channels.reduce((s,ch)=>{ const bud=ch.budgetPct/100*B.totalBudget, imp=ch.cpm>0?bud/ch.cpm*1000:0; return s+(ch.freq>0?imp/ch.freq:imp); },0)*B.duration;
+  const aTotCPC    = aTotClicks > 0 ? aBud / aTotClicks : 0;
+  const bTotCPC    = bTotClicks > 0 ? bBud / bTotClicks : 0;
+
+  // ── Detail metric cards ──
+  const mets = [
+    { l:'Total Campaign Investment', aR:aBud,       bR:bBud,       fmt:short,  lb:false, note:'Total spend for campaign duration' },
+    { l:'Total Impressions',         aR:aImp,       bR:bImp,       fmt:shortN, lb:false, note:'Total ad views across all channels' },
+    { l:'Total Unique Reach',        aR:aTotReach,  bR:bTotReach,  fmt:shortN, lb:false, note:'Unique users who see your ad' },
+    { l:'Total Clicks',              aR:aTotClicks, bR:bTotClicks, fmt:shortN, lb:false, note:'Clicks to landing page or website' },
+    { l:'Total '+A.cfg.resultLabel,  aR:aRes,       bR:bRes,       fmt:shortN, lb:false, note:'Projected leads or purchases' },
+    { l:'Blended CPR',               aR:aCPR,       bR:bCPR,       fmt:short,  lb:true,  note:'Cost per result — lower is better' },
+    { l:'Blended CPC',               aR:aTotCPC,    bR:bTotCPC,    fmt:short,  lb:true,  note:'Cost per click across all channels' },
+    { l:'Results per Rs 1L Spent',   aR:aVPI,       bR:bVPI,       fmt:v=>v.toFixed(2), lb:false, note:'Value index — higher = more efficient' },
+  ];
+  if (A.cfg.showRevenue || B.cfg.showRevenue) {
+    mets.push({ l:'Projected Revenue', aR:aRev,    bR:bRev,    fmt:short,  lb:false, note:'Results x Average Order Value' });
+    mets.push({ l:'Blended ROAS',      aR:A.bROAS, bR:B.bROAS, fmt:v=>v.toFixed(2)+'x', lb:false, note:'Revenue per rupee spent (target >3x)' });
+  }
+
+  const buildCard = (which, snap) => {
+    const color = which==='A' ? 'var(--accent)' : 'var(--warning)';
+    const metRows = mets.map(m => {
+      const tR = which==='A' ? m.aR : m.bR;
+      const oR = which==='A' ? m.bR : m.aR;
+      const d  = oR !== 0 ? (tR - oR) / Math.abs(oR) * 100 : 0;
+      const ib = m.lb ? tR <= oR : tR >= oR;
+      const isSame = Math.abs(d) <= 0.5;
+      const badge = isSame
+        ? `<span class="diff-badge diff-same">same</span>`
+        : `<span class="diff-badge ${ib ? 'diff-better' : 'diff-worse'}">${d >= 0 ? '+' : ''}${d.toFixed(1)}%</span>`;
+      return `<div class="sc-metric">
+        <span class="sml">${m.l}<span style="display:block;font-size:10px;color:var(--border);margin-top:1px">${m.note}</span></span>
+        <span class="smv">${m.fmt(tR)} ${badge}</span>
+      </div>`;
+    }).join('');
+
+    const chRows = snap.channels.map(ch => {
+      const chBud = ch.budgetPct/100*snap.totalBudget;
+      return `<div class="sc-ch-row">
+        <div class="sc-ch-dot" style="background:${ch.color}"></div>
+        <span class="sc-ch-name">${ch.name}</span>
+        <div class="sc-ch-bar-wrap"><div class="sc-ch-bar" style="width:${Math.min(100,ch.budgetPct)}%;background:${ch.color}"></div></div>
+        <span class="sc-ch-pct">${ch.budgetPct.toFixed(1)}%</span>
+        <span style="font-size:11px;color:var(--text-secondary);font-variant-numeric:tabular-nums;width:54px;text-align:right;flex-shrink:0">${short(chBud)}</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="sc-card sc-${which.toLowerCase()}">
+      <div class="sc-card-header">
+        <div>
+          <div class="sc-card-title">Scenario ${which}: ${snap.label}</div>
+          <div class="sc-card-meta">
+            <span>Campaign: ${snap.bizLabel} &rsaquo; ${snap.subLabel}</span>
+            <span>Duration: ${snap.duration} month${snap.duration>1?'s':''} &nbsp;|&nbsp; Monthly: ${short(snap.totalBudget)} &nbsp;|&nbsp; Total: ${short(snap.totalBudget*snap.duration)}</span>
+            <span style="color:var(--border);font-size:10px">Saved: ${fmtDate(snap.savedAt)}</span>
+          </div>
+        </div>
+      </div>
+      <div class="sc-metrics-section">
+        <div class="sc-metrics-title">Business Outcome Metrics</div>
+        <div class="sc-metrics">${metRows}</div>
+      </div>
+      <div class="sc-channel-diff">
+        <div class="sc-channel-diff-title">Channel Budget Allocation</div>
+        ${chRows}
+      </div>
+    </div>`;
+  };
+
+  document.getElementById('scGrid').innerHTML = buildCard('A',A) + buildCard('B',B);
+  document.getElementById('scenarioCompare').style.display = 'block';
+}
+
+// ══════════════════════════════════════════════════════
+//  EXPORT
+// ══════════════════════════════════════════════════════
+function downloadPDF() {
+  const c=cfg(), s=sub(), planName=document.getElementById('planNameInput').value.trim();
+  document.getElementById('printFooter').textContent=`${planName||'Digital Media Plan'} | ${c.label} › ${s?.label} | ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} | India Benchmarks 2025–26`;
+  window.print();
+}
+function sharePlan() {
+  const pl={bizType:ST.bizType,subTabId:ST.subTabId,duration:ST.duration,totalBudget:ST.totalBudget,planName:document.getElementById('planNameInput').value.trim(),channels:ST.channels.map(c=>({budgetPct:c.budgetPct,cpm:c.cpm,ctr:c.ctr,cvr:c.cvr,freq:c.freq,aov:c.aov}))};
+  const url=location.href.split('?')[0]+'?plan='+btoa(JSON.stringify(pl));
+  navigator.clipboard.writeText(url).then(()=>showToast('🔗 Share link copied to clipboard!')).catch(()=>prompt('Copy this URL:',url));
+}
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3200); }
+
+function loadFromURL() {
+  const plan=new URLSearchParams(location.search).get('plan');
+  if(!plan) return;
+  try {
+    const p=JSON.parse(atob(plan));
+    if(p.bizType&&BIZ[p.bizType]){ ST.bizType=p.bizType; const tabs=BIZ[p.bizType].subTabs; ST.subTabId=tabs.find(s=>s.id===p.subTabId)?p.subTabId:tabs[0].id; }
+    if(p.duration)    ST.duration=p.duration;
+    if(p.totalBudget) ST.totalBudget=p.totalBudget;
+    loadChannels();
+    if(p.channels) p.channels.forEach((c,i)=>{ if(ST.channels[i]) Object.assign(ST.channels[i],c); });
+    document.getElementById('totalBudgetInput').value=indFmt(ST.totalBudget);
+    document.getElementById('durationSelect').value=ST.duration;
+    if(p.planName) document.getElementById('planNameInput').value=p.planName;
+  } catch(e){/*ignore*/}
+}
+
+// ══════════════════════════════════════════════════════
+//  CHANNEL LIBRARY — comprehensive catalogue
+//  Each entry: id, name, color, category, cpm, ctr, cvr,
+//  freq, aov(0), tags (for search)
+// ══════════════════════════════════════════════════════
+const CHANNEL_LIBRARY = [
+  // ── Search & Intent ──
+  { id:'gsearch',    name:'Google Search',        color:'#4285f4', cat:'Search',      cpm:450, ctr:3.5, cvr:5.0, freq:1.5, aov:0, tags:'google ppc sem search intent' },
+  { id:'bingsearch', name:'Bing / Microsoft Ads', color:'#00809d', cat:'Search',      cpm:280, ctr:2.8, cvr:4.0, freq:1.5, aov:0, tags:'bing microsoft search' },
+  // ── Social ──
+  { id:'meta',       name:'Meta Ads',             color:'#00ce48', cat:'Social',      cpm:160, ctr:1.2, cvr:2.5, freq:3.0, aov:0, tags:'facebook meta social feed' },
+  { id:'instagram',  name:'Instagram Ads',        color:'#e1306c', cat:'Social',      cpm:145, ctr:1.5, cvr:2.8, freq:3.0, aov:0, tags:'instagram reels stories social' },
+  { id:'linkedin',   name:'LinkedIn Ads',         color:'#0077b5', cat:'Social B2B',  cpm:950, ctr:0.5, cvr:2.5, freq:2.0, aov:0, tags:'linkedin b2b professional' },
+  { id:'twitter',    name:'X / Twitter Ads',      color:'#1da1f2', cat:'Social',      cpm:200, ctr:0.8, cvr:1.5, freq:3.5, aov:0, tags:'twitter x social trending' },
+  { id:'reddit',     name:'Reddit Ads',           color:'#ff4500', cat:'Social',      cpm:220, ctr:0.6, cvr:1.8, freq:3.0, aov:0, tags:'reddit community subreddit' },
+  { id:'quora',      name:'Quora Ads',            color:'#b92b27', cat:'Social',      cpm:180, ctr:0.7, cvr:2.0, freq:2.5, aov:0, tags:'quora intent knowledge answers' },
+  { id:'pinterest',  name:'Pinterest Ads',        color:'#e60023', cat:'Social',      cpm:130, ctr:0.5, cvr:1.5, freq:4.0, aov:0, tags:'pinterest visual discovery' },
+  { id:'snapchat',   name:'Snapchat Ads',         color:'#fffc00', cat:'Social',      cpm:100, ctr:0.6, cvr:1.2, freq:4.5, aov:0, tags:'snapchat gen z mobile' },
+  { id:'tiktok',     name:'TikTok Ads',           color:'#ff0050', cat:'Social',      cpm:130, ctr:1.0, cvr:1.8, freq:4.0, aov:0, tags:'tiktok short video gen z' },
+  { id:'moj',        name:'Moj / ShareChat Ads',  color:'#f7b731', cat:'Social',      cpm:70,  ctr:0.5, cvr:1.0, freq:5.0, aov:0, tags:'moj sharechat hindi regional' },
+  // ── Video ──
+  { id:'youtube',    name:'YouTube Ads',          color:'#ff0000', cat:'Video',       cpm:100, ctr:0.8, cvr:1.5, freq:3.5, aov:0, tags:'youtube video instream bumper' },
+  { id:'ctv',        name:'OTT / CTV Ads',        color:'#4fc3f7', cat:'Video',       cpm:350, ctr:0.3, cvr:0.5, freq:4.0, aov:0, tags:'ott ctv hotstar jiocinema connected tv streaming' },
+  // ── Display & Programmatic ──
+  { id:'gdisplay',   name:'Google Display',       color:'#fbbc04', cat:'Display',     cpm:55,  ctr:0.4, cvr:1.0, freq:4.5, aov:0, tags:'google display banner gdn' },
+  { id:'prog',       name:'Programmatic Display', color:'#4fc3f7', cat:'Display',     cpm:120, ctr:0.3, cvr:1.5, freq:5.0, aov:0, tags:'programmatic dsp display trade desk' },
+  { id:'retarget',   name:'Retargeting / Remarketing', color:'#ff4444', cat:'Display', cpm:90, ctr:1.8, cvr:6.0, freq:6.0, aov:0, tags:'retargeting remarketing pixel audience' },
+  { id:'native',     name:'Native Ads',           color:'#8892a0', cat:'Display',     cpm:80,  ctr:0.5, cvr:1.2, freq:4.0, aov:0, tags:'native ads taboola outbrain content' },
+  // ── Commerce ──
+  { id:'gshop',      name:'Google Shopping',      color:'#34a853', cat:'Commerce',    cpm:300, ctr:2.5, cvr:3.5, freq:2.0, aov:2000, tags:'google shopping pla ecommerce' },
+  { id:'amazon',     name:'Amazon Ads',           color:'#ff9900', cat:'Commerce',    cpm:380, ctr:1.8, cvr:6.0, freq:2.0, aov:2500, tags:'amazon sponsored products ecommerce' },
+  { id:'flipkart',   name:'Flipkart Ads',         color:'#2874f0', cat:'Commerce',    cpm:300, ctr:1.5, cvr:5.0, freq:2.0, aov:2000, tags:'flipkart ecommerce india marketplace' },
+  { id:'qcom',       name:'Quick Commerce Ads',   color:'#f5a623', cat:'Commerce',    cpm:180, ctr:1.2, cvr:4.5, freq:2.5, aov:800,  tags:'blinkit swiggy instamart zepto quick commerce' },
+  // ── Messaging & Email ──
+  { id:'email',      name:'Email Marketing',      color:'#f5a623', cat:'CRM',         cpm:12,  ctr:2.5, cvr:5.0, freq:1.0, aov:0, tags:'email newsletter crm drip' },
+  { id:'whatsapp',   name:'WhatsApp Marketing',   color:'#25d366', cat:'CRM',         cpm:15,  ctr:4.0, cvr:6.0, freq:1.0, aov:0, tags:'whatsapp messaging chat broadcast' },
+  { id:'sms',        name:'SMS Marketing',        color:'#ce93d8', cat:'CRM',         cpm:20,  ctr:3.0, cvr:3.5, freq:1.0, aov:0, tags:'sms text message bulk' },
+  // ── Content & Organic ──
+  { id:'content',    name:'Content / SEO',        color:'#f5a623', cat:'Content',     cpm:80,  ctr:2.0, cvr:3.0, freq:1.2, aov:0, tags:'seo content blog organic' },
+  { id:'influencer', name:'Influencer / UGC',     color:'#ce93d8', cat:'Influencer',  cpm:220, ctr:1.8, cvr:3.0, freq:2.5, aov:0, tags:'influencer ugc creator reels' },
+  // ── B2B Specific ──
+  { id:'intent',     name:'Intent Data / G2',     color:'#f5a623', cat:'B2B',         cpm:600, ctr:1.2, cvr:4.0, freq:2.0, aov:0, tags:'intent data g2 bombora b2b' },
+  { id:'webinar',    name:'Webinar / Events',      color:'#4fc3f7', cat:'B2B',         cpm:200, ctr:1.5, cvr:5.0, freq:2.0, aov:0, tags:'webinar event conference registration' },
+  { id:'podcast',    name:'Podcast Ads',           color:'#8b5cf6', cat:'Content',     cpm:300, ctr:0.4, cvr:1.0, freq:2.0, aov:0, tags:'podcast audio spotify' },
+  // ── Apps ──
+  { id:'gac',        name:'Google App Campaigns', color:'#4285f4', cat:'App',         cpm:200, ctr:2.5, cvr:5.0, freq:2.5, aov:0, tags:'google app install uac' },
+  { id:'metaapp',    name:'Meta App Install Ads', color:'#00ce48', cat:'App',         cpm:160, ctr:2.0, cvr:4.5, freq:3.0, aov:0, tags:'meta facebook app install mobile' },
+  // ── Regional / India Specific ──
+  { id:'jioads',     name:'JioAds / Reliance',    color:'#0088cc', cat:'India',       cpm:90,  ctr:0.6, cvr:1.5, freq:4.0, aov:0, tags:'jio reliance india regional' },
+  { id:'inshorts',   name:'Inshorts / DailyHunt', color:'#ff6b35', cat:'India',       cpm:120, ctr:0.7, cvr:1.2, freq:3.5, aov:0, tags:'inshorts dailyhunt news india' },
+];
+
+// Unique ID counter for custom channels
+let chIdCounter = 9000;
+
+// ── Colour palette for dot picker ──
+const PALETTE = ['#00ce48','#4285f4','#fbbc04','#ff0000','#0077b5','#f5a623','#ce93d8','#4fc3f7','#ff4500','#b92b27','#e1306c','#25d366','#ff9900','#2874f0','#8b5cf6','#1da1f2','#34a853','#ff4444','#8892a0','#ff0050'];
+
+// ══════════════════════════════════════════════════════
+//  CHANNEL MANAGER — open / close / render
+// ══════════════════════════════════════════════════════
+function openChModal() {
+  document.getElementById('chModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  renderChActiveList();
+  renderChLibrary();
+  updateChCountBadge();
+}
+function closeChModal() {
+  // Normalise budget percentages to 100% when closing
+  normaliseBudgetPcts();
+  document.getElementById('chModal').classList.remove('open');
+  document.body.style.overflow = '';
+  buildTable();
+  recalcAll();
+}
+// Close on backdrop click
+document.addEventListener('click', e => {
+  const modal = document.getElementById('chModal');
+  if (e.target === modal) closeChModal();
+});
+
+function updateChCountBadge() {
+  const n = ST.channels.length;
+  document.getElementById('chCountBadge').textContent = n + ' channel' + (n !== 1 ? 's' : '') + ' active';
+  const el = document.getElementById('chActiveCount');
+  if (el) el.textContent = '(' + n + ')';
+}
+
+// ── Render active channels list ──
+function renderChActiveList() {
+  const list = document.getElementById('chActiveList');
+  if (!ST.channels.length) {
+    list.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;padding:8px 0;">No channels yet. Add some from the library below.</div>';
+    return;
+  }
+  list.innerHTML = ST.channels.map((ch, i) => `
+    <div class="ch-active-row" id="ach-${i}" draggable="true"
+      ondragstart="chDragStart(event,${i})" ondragover="chDragOver(event,${i})"
+      ondrop="chDrop(event,${i})" ondragend="chDragEnd()">
+      <span class="drag-handle" title="Drag to reorder">⠿</span>
+      <div class="ch-color-pick" title="Click to change colour">
+        <input type="color" value="${ch.color}" onchange="updateChColor(${i}, this.value)" style="opacity:0;position:absolute;width:26px;height:26px;cursor:pointer;">
+        <div style="width:100%;height:100%;background:${ch.color};border-radius:4px;"></div>
+      </div>
+      <div class="ch-active-name">
+        <input type="text" value="${ch.name}" onchange="updateChName(${i}, this.value)" title="Click to rename">
+      </div>
+      <span style="font-size:12px;color:var(--text-secondary);width:38px;text-align:right;font-variant-numeric:tabular-nums;flex-shrink:0">${ch.budgetPct.toFixed(0)}%</span>
+      <button class="ch-del-btn" onclick="deleteChannel(${i})" title="Remove this channel">✕</button>
+    </div>`).join('');
+  updateChCountBadge();
+}
+
+// ── Colour update ──
+function updateChColor(idx, color) {
+  if (ST.channels[idx]) {
+    ST.channels[idx].color = color;
+    renderChActiveList();
+    buildTable();
+    recalcAll();
+  }
+}
+
+// ── Name update ──
+function updateChName(idx, name) {
+  if (ST.channels[idx] && name.trim()) {
+    ST.channels[idx].name = name.trim();
+  }
+}
+
+// ── Delete channel ──
+function deleteChannel(idx) {
+  if (ST.channels.length <= 1) {
+    showToast('⚠ You need at least 1 channel.');
+    return;
+  }
+  ST.channels.splice(idx, 1);
+  // Re-distribute the freed budget proportionally
+  normaliseBudgetPcts();
+  renderChActiveList();
+  renderChLibrary();
+  buildTable();
+  recalcAll();
+  showToast('Channel removed. Budget redistributed automatically.');
+}
+
+// ── Normalise budget %s to sum to 100 ──
+function normaliseBudgetPcts() {
+  const total = ST.channels.reduce((s, c) => s + c.budgetPct, 0);
+  if (total <= 0 || ST.channels.length === 0) return;
+  if (Math.abs(total - 100) < 0.1) return; // already fine
+  ST.channels.forEach(ch => { ch.budgetPct = (ch.budgetPct / total) * 100; });
+}
+
+// ── Drag-to-reorder ──
+let dragFromIdx = -1;
+function chDragStart(e, idx) { dragFromIdx = idx; e.dataTransfer.effectAllowed = 'move'; }
+function chDragOver(e, idx) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+function chDrop(e, idx) {
+  e.preventDefault();
+  if (dragFromIdx < 0 || dragFromIdx === idx) return;
+  const moved = ST.channels.splice(dragFromIdx, 1)[0];
+  ST.channels.splice(idx, 0, moved);
+  dragFromIdx = -1;
+  renderChActiveList();
+  buildTable();
+  recalcAll();
+}
+function chDragEnd() { dragFromIdx = -1; }
+
+// ── Render library ──
+function renderChLibrary() {
+  const query = (document.getElementById('chLibSearch')?.value || '').toLowerCase();
+  const activeIds = new Set(ST.channels.map(c => c.id));
+  const filtered = CHANNEL_LIBRARY.filter(ch => {
+    if (!query) return true;
+    return ch.name.toLowerCase().includes(query) || (ch.tags || '').includes(query) || ch.cat.toLowerCase().includes(query);
+  });
+  if (!filtered.length) {
+    document.getElementById('chLibraryGrid').innerHTML = '<div style="color:var(--text-secondary);font-size:13px;grid-column:1/-1;padding:8px 0">No channels match your search. Use the custom form below to add any channel.</div>';
+    return;
+  }
+  document.getElementById('chLibraryGrid').innerHTML = filtered.map(ch => {
+    const added = activeIds.has(ch.id);
+    return `<div class="ch-lib-item${added ? ' already-added' : ''}" onclick="${added ? '' : 'addLibChannel(\'' + ch.id + '\')'}" title="${added ? 'Already in your plan' : 'Click to add ' + ch.name}">
+      <div class="ch-lib-dot" style="background:${ch.color}"></div>
+      <div class="ch-lib-info">
+        <div class="ch-lib-name">${ch.name}</div>
+        <div class="ch-lib-meta">${ch.cat} · CPM Rs${ch.cpm} · CTR ${ch.ctr}%</div>
+      </div>
+      <span class="ch-lib-add">${added ? '✓' : '+'}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Add from library ──
+function addLibChannel(libId) {
+  const template = CHANNEL_LIBRARY.find(c => c.id === libId);
+  if (!template) return;
+  // Assign a fair starting budget: split equally
+  const fairPct = Math.max(5, Math.floor(100 / (ST.channels.length + 1)));
+  // Reduce existing channels proportionally
+  const remaining = 100 - fairPct;
+  const currentTotal = ST.channels.reduce((s, c) => s + c.budgetPct, 0) || 100;
+  ST.channels.forEach(ch => { ch.budgetPct = (ch.budgetPct / currentTotal) * remaining; });
+  ST.channels.push({
+    id: template.id + '_' + Date.now(),
+    name: template.name,
+    color: template.color,
+    budgetPct: fairPct,
+    cpm: template.cpm,
+    ctr: template.ctr,
+    cvr: template.cvr,
+    freq: template.freq,
+    aov: template.aov || 0,
+  });
+  renderChActiveList();
+  renderChLibrary();
+  buildTable();
+  recalcAll();
+  showToast('+ ' + template.name + ' added. Budget split automatically.');
+}
+
+// ── Custom channel form ──
+let customFormOpen = false;
+function toggleCustomForm() {
+  customFormOpen = !customFormOpen;
+  document.getElementById('chCustomForm').classList.toggle('open', customFormOpen);
+  document.getElementById('customFormArrow').textContent = customFormOpen ? '▲' : '▼';
+}
+function addCustomChannel() {
+  const name  = document.getElementById('ccName').value.trim();
+  const cpm   = parseFloat(document.getElementById('ccCpm').value) || 200;
+  const ctr   = parseFloat(document.getElementById('ccCtr').value) || 1.0;
+  const cvr   = parseFloat(document.getElementById('ccCvr').value) || 2.0;
+  const freq  = parseFloat(document.getElementById('ccFreq').value) || 3.0;
+  const pct   = parseFloat(document.getElementById('ccPct').value) || 10;
+  const color = document.getElementById('ccColor').value || '#a78bfa';
+  if (!name) { showToast('⚠ Please enter a channel name.'); return; }
+  // Reduce existing channels proportionally
+  const remaining = Math.max(0, 100 - pct);
+  const currentTotal = ST.channels.reduce((s, c) => s + c.budgetPct, 0) || 100;
+  ST.channels.forEach(ch => { ch.budgetPct = (ch.budgetPct / currentTotal) * remaining; });
+  ST.channels.push({ id: 'custom_' + (++chIdCounter), name, color, budgetPct: pct, cpm, ctr, cvr, freq, aov: 0 });
+  // Clear form
+  ['ccName','ccCpm','ccCtr','ccCvr','ccFreq','ccPct'].forEach(id => { document.getElementById(id).value = ''; });
+  renderChActiveList();
+  renderChLibrary();
+  buildTable();
+  recalcAll();
+  showToast('+ ' + name + ' added as custom channel.');
+}
+
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  loadFromURL();
+  if(!ST.channels.length) loadChannels();
+  renderBizTabs(); renderSubTabs(); buildTable(); recalcAll();
+});
+</script>
+</body>
+</html>
